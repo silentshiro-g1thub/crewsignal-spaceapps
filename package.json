@@ -5,17 +5,15 @@
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "scripts": {
-    "setup": "npm ci --prefix shared && npm ci --prefix website && npm ci --prefix desktop && npm ci --prefix mobile",
-    "setup:demo": "npm ci --prefix website",
+    "setup": "npm ci --prefix shared && npm ci --prefix desktop && npm ci --prefix mobile",
     "setup:windows": "npm ci --prefix desktop",
-    "dev": "npm --prefix website run dev --",
-    "preview": "npm --prefix website run preview --",
+    "dev": "npm --prefix desktop run dev --",
     "dev:desktop": "npm --prefix desktop run dev --",
     "dev:windows": "npm --prefix desktop run tauri:dev -- -- --locked",
     "dev:mobile": "npm --prefix mobile start --",
-    "typecheck": "npm --prefix shared run typecheck && npm --prefix website run typecheck && npm --prefix desktop run typecheck && npm --prefix mobile run typecheck",
-    "test": "npm --prefix shared test && npm --prefix website test && npm --prefix desktop test && npm --prefix mobile test",
-    "build": "npm --prefix website run build && npm --prefix desktop run build",
+    "typecheck": "npm --prefix shared run typecheck && npm --prefix desktop run typecheck && npm --prefix mobile run typecheck",
+    "test": "npm --prefix shared test && npm --prefix desktop test && npm --prefix mobile test",
+    "build": "npm --prefix desktop run build",
     "build:windows": "npm --prefix desktop run tauri:build -- -- --locked",
     "export:android": "npm --prefix mobile run export --"
   }

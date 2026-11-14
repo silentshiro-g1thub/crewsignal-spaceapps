@@ -355,11 +355,17 @@ describe('Personal reference lifecycle & 7-day fallback heuristic', () => {
   });
 });
 
-describe('Controlled guidance, evidence registry (2026-11-13), and Help registry', () => {
-  it('bundles all 8 NASA/CDC/NIST sources checked 2026-11-13 with cached summaries', () => {
-    expect(EVIDENCE_LIST).toHaveLength(8);
+describe('Controlled guidance, evidence registry, and Help registry', () => {
+  it('bundles the reviewed November 13 and 14 source inventory with cached summaries', () => {
+    const original = ['nasa-sleep-risk', 'nasa-seven-ways-sleep', 'nasa-standard-measures',
+      'nasa-hrp-hazards', 'nasa-human-research-roadmap', 'nasa-isolation-standard-measures',
+      'cdc-nhanes-glucose', 'nist-temperature-units'];
+    const added = ['nlm-pulse', 'aha-blood-pressure', 'nasa-standing-risk', 'fda-glucose-meter',
+      'nasa-human-adaptation', 'nlm-temperature', 'nasa-body-temperature', 'nih-sleep-diary',
+      'nasa-behavioral-measures'];
+    expect(EVIDENCE_LIST.map(src => src.sourceId).sort()).toEqual([...original, ...added].sort());
     for (const src of EVIDENCE_LIST) {
-      expect(src.checkedDate).toBe(EVIDENCE_CHECKED_DATE);
+      expect(src.checkedDate).toBe(original.includes(src.sourceId) ? EVIDENCE_CHECKED_DATE : '2026-11-14');
       expect(src.cachedAvailable).toBe(true);
       expect(src.summaryText.length).toBeGreaterThan(20);
       expect(src.limitations.length).toBeGreaterThan(15);

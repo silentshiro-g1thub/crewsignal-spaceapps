@@ -1,1 +1,0 @@
-observation_id,metric_id,timing_kind,observed_at_utc,mission_day,sleep_type,ending_mission_day,duration_minutes,sleep_window_start_utc,sleep_window_end_utc,reported_at_utc,value,secondary_value,unit,method,context,provenance,notes,quality

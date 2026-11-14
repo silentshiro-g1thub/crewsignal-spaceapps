@@ -241,47 +241,6 @@ Note: `shared/package-lock.json` additionally installs transitive dev/test tooli
 
 ---
 
-## 3. Website Dependencies (`source/website/`)
-
-Inspected from `website/package.json` and `website/package-lock.json` (`539` locked packages total):
-
-### Runtime Dependencies
-
-| Package | Version | License | Scope |
-| --- | --- | --- | --- |
-| `dexie` | `4.4.7` | Apache-2.0 | IndexedDB local storage |
-| `lucide-react` | `1.72.0` | ISC | UI icons |
-| `react` | `19.3.1` | MIT | UI runtime |
-| `react-dom` | `19.3.1` | MIT | Web DOM renderer |
-| `react-is` | `19.3.1` | MIT | Recharts React peer helper |
-| `react-router-dom` | `7.18.5` | MIT | `/`, `/demo`, and sub-route routing |
-| `recharts` | `3.10.1` | MIT | Trend charts |
-| `workbox-window` | `7.4.1` | MIT | PWA service-worker lifecycle & deferred activation |
-| `zod` | `4.6.7` | MIT | Shared schema validation |
-
-### Direct Development & Verification Dependencies
-
-| Package | Version | License | Scope |
-| --- | --- | --- | --- |
-| `@axe-core/playwright` | `4.14.0` | MPL-2.0 | Automated WCAG 2.2 AA accessibility audits |
-| `@playwright/test` | `1.65.0` | Apache-2.0 | End-to-end browser, viewport, and offline SW suite |
-| `@testing-library/jest-dom` | `7.0.1` | MIT | DOM test matchers |
-| `@testing-library/react` | `16.3.3` | MIT | Component tests |
-| `@types/node` | `26.6.6` | MIT | Test / config typings |
-| `@types/react` | `19.3.0` | MIT | React TypeScript definitions |
-| `@types/react-dom` | `19.3.0` | MIT | React DOM TypeScript definitions |
-| `@vitejs/plugin-react` | `6.3.0` | MIT | Vite React plugin |
-| `fake-indexeddb` | `6.2.8` | Apache-2.0 | Offline/unit IndexedDB testing |
-| `jsdom` | `31.0.0` | MIT | Unit test DOM environment |
-| `typescript` | `7.0.2` | Apache-2.0 | Typechecking |
-| `vite` | `8.3.8` | MIT | Bundler & dev/preview server |
-| `vite-plugin-pwa` | `2.0.0` | MIT | Offline manifest & Workbox precaching |
-| `vitest` | `5.1.0` | MIT | Unit & transaction test runner |
-
-Transitive lockfile license breakdown across all `539` locked entries in `website/package-lock.json`: `MIT` (`438`), `Apache-2.0` (`35`), `ISC` (`26`), `MPL-2.0` (`14`), `BlueOak-1.0.0` (`9`), `BSD-3-Clause` (`7`), `BSD-2-Clause` (`6`), `CC-BY-4.0` (`1`), `0BSD` (`1`), `(MIT OR CC0-1.0)` (`1`), `MIT AND ISC AND BSD-3-Clause` (`1`).
-
----
-
 ## 4. Desktop Dependencies (`source/desktop/`)
 
 Inspected from `desktop/package-lock.json` (`176` locked npm packages) and `desktop/src-tauri/Cargo.lock` (`257` locked Windows MSVC Rust crates via `cargo metadata --offline --filter-platform x86_64-pc-windows-msvc`).

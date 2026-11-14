@@ -1,6 +1,0 @@
-observation_id,metric_id,timing_kind,observed_at_utc,mission_day,sleep_type,ending_mission_day,duration_minutes,sleep_window_start_utc,sleep_window_end_utc,reported_at_utc,value,secondary_value,unit,method,context,provenance,notes,quality
-obs-csv-hr-d40,heart_rate,instant,2026-11-11T07:03:00Z,40,,,,,,,68,,bpm,Manual pulse count,At rest,csv_import,,
-obs-csv-temp-d41,body_temperature,instant,2026-11-12T07:10:00Z,41,,,,,,,36.6,,C,Oral thermometer,At rest,csv_import,,
-obs-sim01-bp-01,blood_pressure,instant,2026-11-13T07:07:00Z,42,,,,,,,118,76,mmHg,Manual cuff,At rest,csv_import,,
-obs-sim01-bp-01,blood_pressure,instant,2026-11-13T07:07:00Z,42,,,,,,,120,78,mmHg,Manual cuff,At rest,csv_import,,
-obs-csv-glu-rejected,blood_glucose,instant,2026-11-13T07:15:00Z,42,,,,,,,5.4,,mg,Not specified,Not specified,csv_import,,

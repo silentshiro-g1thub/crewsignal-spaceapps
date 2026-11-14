@@ -664,3 +664,90 @@ Available website dependencies were reused through ignored local node_modules ju
 - Installed Windows, Android phone and Android tablet: NOT RUN. No updated native binary was built/installed; relaunch, input accessibility, and backup behavior on installed apps remain open. SQLite reopen is harness evidence only.
 
 Acceptance is not fully verified until the native dependencies are provisioned, the normal UI suites and installed target scenarios run, and the unrelated source-count assertion is reconciled. No installed-app or clinical validation is claimed.
+
+
+## Silentshiro native/site split preparation - November 14, 2026 (Refs #8)
+
+Scope: native repository silentshiro-g1thub/crewsignal-spaceapps; intended separate
+site repository silentshiro-g1thub/crewsignal-site. Existing native URL, issues,
+history and visibility are retained. No history rewrite or hosting changes.
+
+Tested native code commit: 1d3f4ad9c27b016b6e8df19872e2dac3400829c9.
+Tested site code/bootstrap commit: b4727bb9f2b6ad9e0d6de9761f179fb2ef7709c0.
+Website source and shared snapshot originate at native 07e592aa9039aef2a2e597e0bc8e1f0e8b44ac18.
+The final evidence-only commits follow these tested code commits.
+
+### Harness results
+
+Separate clean Git clones were used for native and site source checks. Cached
+Node dependencies supplied tooling; a fresh network npm ci was not exercised.
+Neither build reads the other checkout's source or requires native credentials
+in site CI. Added .gitattributes pins LF for byte-sensitive fixtures and font
+licenses; binary font/image data is preserved.
+
+Native commands and outcomes:
+
+- node shared/scripts/sync-to-targets.mjs --write all: PASS, desktop/mobile only,
+  42 shared files each. No website target; unsupported names fail explicitly.
+- node shared/scripts/sync-to-targets.mjs --check all: PASS, strict SHA-256 parity.
+- node scripts/verify-clean-source.mjs: PASS from native, no secret/local-data or
+  workspace-sibling findings; both targets match.
+- npm --prefix shared run typecheck: PASS (source and test typechecks).
+- npm --prefix shared test: PASS, 100 tests in 9 files. The old 8-source assertion
+  was stale against the already committed 17-source registry; the test now pins
+  all 17 IDs and their existing November 13/14 review dates. No evidence content
+  or app behavior changed for that test correction.
+- node --test scripts/export-site-shared.test.mjs: PASS, deterministic pinned
+  export, source-tamper rejection, nested-destination refusal and obsolete target
+  rejection. Export checks read exact Git objects rather than worktree state.
+- node scripts/export-site-shared.mjs --commit 07e592aa9039aef2a2e597e0bc8e1f0e8b44ac18 --site ABSOLUTE_SITE_ROOT --check:
+  PASS against the separate clean site checkout, 42 files.
+- npm --prefix desktop run typecheck: BLOCKED/FAIL, cached tooling lacks Tauri
+  core/event and three modules (also causes an inferred event-type diagnostic).
+- npm --prefix desktop test: BLOCKED/FAIL, 10 suites could not collect because
+  Tauri imports are unavailable; zero tests executed. No Windows UI pass claimed.
+- npm --prefix mobile run typecheck and npm --prefix mobile test -- --runInBand:
+  BLOCKED, mobile dependencies are not installed (tsc/jest unavailable).
+- cargo test --offline --manifest-path desktop/src-tauri/Cargo.toml: BLOCKED,
+  chrono is absent from the offline crates cache. Rust storage tests not executed.
+
+Site commands and outcomes:
+
+- npm run verify:snapshot: PASS, 42 SHA-256/length/inventory entries pinned to
+  the native source revision above; standalone checker needs no native access.
+- npm run typecheck: PASS.
+- npm test: PASS, 18 tests in 7 files. Added checks reject Personal backup and
+  draft-recovery payloads through actual repository adapters with no writes,
+  and reject tampered vendored snapshots from an isolated temporary checkout.
+- npm run build: PASS from standalone clean clone; production PWA precaches 22
+  entries. Bundled body-model scene is preserved. Existing large-chunk warning.
+- SITE_TEST_ORIGIN=http://127.0.0.1:4186 node node_modules/@playwright/test/cli.js test --config test-results/split.config.ts:
+  PASS, all 16 Chromium browser tests. Production preview on port 4186 was used
+  to avoid the user's existing preview server. Temporary config imported the
+  checked-in config, disabled its webServer, used that baseURL, set outputDir,
+  and enabled --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader.
+  Coverage includes / and /demo/* navigation/reload, PWA offline reload, synthetic
+  journeys and imports, accessibility checks, 3D rendering/selection/rotation,
+  reduced motion, graphics fallback and WebGL context-loss recovery. Updated
+  old diagram-only and duplicate-guidance selectors to reflect the current UI;
+  profile-selection waits prevent navigating with a stale fixture selection.
+
+### Installed-app and deployed-site results
+
+NOT RUN: installed Windows app, Android phone and tablet, native installer
+builds, fresh network dependency installation, hosting cutover and signed-out
+judge-access checks. Browser harness results are not installed-app evidence.
+
+The bootstrap and removal are prepared, not a completed deployment. The connected
+GitHub tool cannot provision a repository here; the handoff command uses the
+owner's normal authenticated gh terminal to create only the private Silentshiro
+site, verify its uploaded bootstrap, then apply native changes uncommitted and
+unstaged for GitHub Desktop review. Native main and existing deployment remain
+unchanged until reviewed. Keep Refs #8 until the platform and cutover checks pass.
+
+Owner handoff: native https://github.com/silentshiro-g1thub/crewsignal-spaceapps;
+site destination https://github.com/silentshiro-g1thub/crewsignal-site. Confirm
+portal requirements and intended judging/site/download URLs before submission.
+Preserve current hosting and legacy routes during review; use the prior working
+deployment if the new deploy fails. Do not publish native source, Personal data,
+backups, workspace plans or unavailable installer links with the site.
