@@ -1,24 +1,70 @@
+import { useEffect, useRef } from "react";
 import { ExternalLink, HardDrive } from "lucide-react";
-import { describeMissionContact, EVIDENCE_LIST, resolveHelpContent } from "../shared/src";
+import {
+  describeMissionContact, EVIDENCE_LIST, GETTING_STARTED_INTRO, GETTING_STARTED_PERSONAL,
+  GETTING_STARTED_STEPS, GETTING_STARTED_STORAGE, resolveHelpContent,
+} from "../shared/src";
 import { ReadingStatusLegend } from "../components/ReadingStatusBadge";
 import { desktopBridge } from "../bridge/desktopBridge";
 import { useApp } from "../state/AppContext";
 
 export function HelpRoute() {
-  const { preferences, setHelpMode, activeDraft, navigate } = useApp();
+  const {
+    preferences, setHelpMode, activeDraft, activeProfile, navigate, gettingStarted,
+    openGettingStarted, openGettingStartedStep, showHelpProcedures, returnFromHelp,
+  } = useApp();
   const helpCard = resolveHelpContent(preferences.helpMode);
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => { heading.current?.focus(); }, [gettingStarted]);
+
+  if (gettingStarted) {
+    const isDemo = activeProfile?.mode === "demo";
+    return (
+      <div className="stack-lg">
+        <div className="page-header">
+          <div>
+            <h1 ref={heading} tabIndex={-1} className="page-title">Getting started</h1>
+            <p className="page-subtitle">{GETTING_STARTED_INTRO}</p>
+          </div>
+          <div className="row-wrap">
+            <button type="button" className="btn-secondary" onClick={showHelpProcedures}>Help procedures and sources</button>
+            <button type="button" className="btn-secondary" onClick={returnFromHelp}>Return to previous screen</button>
+          </div>
+        </div>
+        {activeProfile?.mode === "personal" && <p>{GETTING_STARTED_PERSONAL}</p>}
+        <ol className="stack-md" style={{ paddingInlineStart: 24, marginBlock: 0 }}>
+          {GETTING_STARTED_STEPS.map((step) => (
+            <li key={step.route} className="panel-card">
+              <div className="stack-sm">
+                <h2 className="panel-heading">{step.title}</h2>
+                <p>{step.body}</p>
+                {isDemo && <button type="button" className="btn-secondary" onClick={() => openGettingStartedStep(step.route)}>{step.action}</button>}
+              </div>
+            </li>
+          ))}
+        </ol>
+        <section className="panel-card stack-sm">
+          <h2 className="panel-heading">Local storage and export</h2>
+          <p>{GETTING_STARTED_STORAGE} On Windows, Export Report JSON writes a copy to the location you select. Print / Save PDF opens the system print dialog. Any onward sharing is up to you.</p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="stack-lg">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Help</h1>
+          <h1 ref={heading} tabIndex={-1} className="page-title">Help</h1>
           <p className="page-subtitle">
             Always reachable offline, before any check-in, mid-draft, or if the observation log fails to load.
           </p>
         </div>
         <div className="row-wrap">
-          {activeDraft ? (
+          <button type="button" className="btn-secondary" onClick={openGettingStarted}>Getting started</button>
+          <button type="button" className="btn-secondary" onClick={returnFromHelp}>Return to previous screen</button>
+          {activeDraft && activeDraft.profileId === activeProfile?.profileId ? (
             <button
               type="button"
               className="btn-primary"
@@ -124,6 +170,12 @@ export function HelpRoute() {
             </button>
           </div>
         </details>
+      </section>
+
+      <section className="panel-card stack-sm" aria-labelledby="help-data-heading">
+        <h2 id="help-data-heading" className="panel-heading">Where your data lives</h2>
+        <p>On Windows, CrewSignal stores readings and drafts in <code>crewsignal.db</code> in your Windows AppData folder. CrewSignal has no cloud sync and does not encrypt the database or exported files.</p>
+        <p>Use Reports to save or restore a full profile backup. It includes that profile's readings, mood and notes. Report exports contain the readings you select and exclude mood and notes by default.</p>
       </section>
 
       <section className="panel-card stack-sm" aria-labelledby="help-cached-sources-heading">

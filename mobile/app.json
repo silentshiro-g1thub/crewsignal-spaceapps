@@ -15,6 +15,7 @@
     },
     "android": {
       "package": "org.spaceapps.popnseb.crewsignal",
+      "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#08090a"
@@ -24,7 +25,8 @@
       "expo-sqlite",
       "expo-font",
       "expo-document-picker",
-      "expo-asset"
+      "expo-asset",
+      "expo-notifications"
     ]
   }
 }

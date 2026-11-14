@@ -8,6 +8,8 @@ import {
   SIM_01_PROFILE_ID,
   SIM_01_SNAPSHOT_UTC,
   SIM_SCHEDULE_OBSERVATIONS,
+  getDueCheckIns,
+  getCheckInReminders,
   SIM_SCHEDULE_PROFILE,
   type Observation,
   applyInputUnitChange,
@@ -133,6 +135,16 @@ describe('Mission day timing, schedule freshness, sleep period, mood, and BP val
 
   it('computes SIM-SCHEDULE BP age as 26h 18m against a 24h interval', () => {
     const bpObs = SIM_SCHEDULE_OBSERVATIONS[0]!;
+    const now = SIM_SCHEDULE_PROFILE.snapshotUtc!;
+    expect(getDueCheckIns(SIM_SCHEDULE_PROFILE, SIM_SCHEDULE_OBSERVATIONS, now))
+      .toEqual([expect.objectContaining({ metricId: 'blood_pressure', status: 'past_interval' })]);
+    expect(getDueCheckIns(SIM_SCHEDULE_PROFILE, [], now))
+      .toEqual([expect.objectContaining({ metricId: 'blood_pressure', status: 'due_no_entries' })]);
+    expect(getCheckInReminders(SIM_SCHEDULE_PROFILE, SIM_SCHEDULE_OBSERVATIONS))
+      .toEqual([expect.objectContaining({ title: 'Blood pressure check-in is due' })]);
+    const disabled = { ...SIM_SCHEDULE_PROFILE, schedules: { ...SIM_SCHEDULE_PROFILE.schedules, blood_pressure: null } };
+    expect(getCheckInReminders(disabled, SIM_SCHEDULE_OBSERVATIONS)).toEqual([]);
+    expect(getDueCheckIns(disabled, SIM_SCHEDULE_OBSERVATIONS, now)).toEqual([]);
     const ageMins = computeAgeMinutes(
       bpObs.timing.kind === 'instant' ? bpObs.timing.observedAtUtc : '',
       SIM_01_SNAPSHOT_UTC,

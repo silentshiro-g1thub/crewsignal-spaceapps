@@ -2,6 +2,30 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 test.describe("CrewSignal Desktop E2E, Accessibility, Themes, Print & Scaling", () => {
+  test("Getting started works by keyboard without external requests", async ({ page, baseURL }) => {
+    await page.route("**/*", (route) => new URL(route.request().url()).origin === baseURL
+      ? route.continue()
+      : route.abort());
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto("/");
+    const entry = page.getByRole("button", { name: "Getting started", exact: true });
+    await expect(entry).toBeVisible();
+    expect((await entry.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    await entry.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { name: "Getting started" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Help procedures and sources" })).toBeFocused();
+    const audit = await new AxeBuilder({ page }).include("#main-content")
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+    expect(audit.violations).toEqual([]);
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Return to previous screen" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    await expect(page.getByRole("main")).toBeFocused();
+  });
+
   test("passes WCAG 2.2 AA axe-core checks on all core routes in Light & Dark modes", async ({
     page,
   }) => {

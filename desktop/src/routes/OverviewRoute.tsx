@@ -6,6 +6,7 @@ import {
   computeMissionDay,
   describeMissionContact,
   evaluateMetricSchedule,
+  getDueCheckIns,
   formatObservationDisplay,
   NEEDS_RECHECK_LABEL,
   formatUtcTimeHHMM,
@@ -39,6 +40,8 @@ export function OverviewRoute() {
     trendRangeDays,
     setTrendRangeDays,
     navigate,
+    openGettingStarted,
+    gettingStarted,
     setSelectedTrendMetric,
     openDraftForMetric,
   } = useApp();
@@ -128,6 +131,7 @@ export function OverviewRoute() {
   }
 
   const observations = snapshot.profileData.observations;
+  const dueCheckIns = getDueCheckIns(activeProfile, observations, currentReferenceNowUtc);
   const raisePrompt = buildRaiseReadingPrompt({
     profileId: activeProfile.profileId,
     observations,
@@ -172,6 +176,11 @@ export function OverviewRoute() {
           </p>
         </div>
         <div className="row-wrap">
+          {activeProfile.mode === "demo" && !gettingStarted && (
+            <button type="button" className="btn-secondary" onClick={openGettingStarted}>
+              Getting started
+            </button>
+          )}
           {activeDraft ? (
             <button
               type="button"
@@ -190,6 +199,21 @@ export function OverviewRoute() {
           </button>
         </div>
       </div>
+
+      {dueCheckIns.length > 0 && (
+        <section className="panel-card stack-sm" aria-labelledby="due-now-heading">
+          <h2 id="due-now-heading" className="panel-heading">Due now</h2>
+          {dueCheckIns.map(({ metricId, status }) => (
+            <div className="row-wrap" key={metricId}>
+              <span>{METRIC_DEFINITIONS[metricId].name}</span>
+              <span>{status === "due_no_entries" ? "First check-in due" : "Check-in due"}</span>
+              <button type="button" className="btn-secondary" onClick={() => void openDraftForMetric(metricId)}>
+                Log {METRIC_DEFINITIONS[metricId].shortLabel.toLowerCase()}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
 
       {raisePrompt && (
         <section className="panel-card stack-sm" aria-labelledby="raise-reading-heading">
@@ -334,9 +358,9 @@ export function OverviewRoute() {
                       : null;
 
                 return (
-                  <div key={metricId} className="reading-cell" role="group" aria-labelledby={`${statusId}-name`} aria-describedby={statusId}>
+                  <div key={metricId} className="reading-cell">
                     <div className="row-wrap" style={{ justifyContent: "space-between", gap: 4 }}>
-                      <span id={`${statusId}-name`} className="mono-label">{def.shortLabel}</span>
+                      <span className="mono-label">{def.shortLabel}</span>
                       {schedStatus.status === "past_interval" ? (
                         <span className="badge-review" title="Optional scheduled check-in interval elapsed">
                           Past interval
@@ -344,7 +368,7 @@ export function OverviewRoute() {
                       ) : schedStatus.status === "within_interval" ? (
                         <span className="badge-neutral">On schedule</span>
                       ) : schedStatus.status === "due_no_entries" ? (
-                        <span className="badge-review">Interval set</span>
+                        <span className="badge-review">First check-in due</span>
                       ) : null}
                     </div>
 

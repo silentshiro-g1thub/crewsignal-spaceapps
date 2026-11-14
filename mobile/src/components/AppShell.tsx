@@ -1,7 +1,9 @@
+import { getDueCheckIns } from '../shared/src';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { ActionButton } from './AppPrimitives';
 import { computeMissionDay, formatUtcTimeHHMM } from '../shared/src';
 import { useCrewSignal, type CrewSignalRoute } from '../state/CrewSignalContext';
 import { useCrewTheme } from '../theme/ThemeProvider';
@@ -170,7 +172,10 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
     activeRoute,
     navigateTo,
     goBackFromHelp,
+    gettingStarted,
+    openGettingStarted,
     activeProfile,
+    observations,
     nowUtc,
     isKeyboardVisible,
     isOfflineSimulated,
@@ -178,6 +183,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
   } = useCrewSignal();
 
   const currentUtc = nowUtc();
+  const dueCount = getDueCheckIns(activeProfile, observations, currentUtc).length;
   const missionDay = activeProfile
     ? computeMissionDay(currentUtc, activeProfile.missionEpochUtc)
     : 1;
@@ -191,6 +197,11 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
       activeRoute === 'settings');
 
   const hideBottomBar = !isTablet && isKeyboardVisible && activeRoute === 'checkin';
+  const walkthroughReturn = gettingStarted && activeRoute !== 'help' ? (
+    <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+      <ActionButton label="Back to Getting started" onPress={openGettingStarted} variant="secondary" />
+    </View>
+  ) : null;
 
   const headerBar = (
     <View
@@ -412,7 +423,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
                     testID={`rail-${item.route}`}
                     onPress={() => navigateTo(item.route)}
                     accessibilityRole="tab"
-                    accessibilityLabel={item.label}
+                    accessibilityLabel={item.label === 'Check-in' && dueCount ? `Check-in, ${dueCount} due` : item.label}
                     accessibilityState={{ selected }}
                     style={{
                       minHeight: MIN_NATIVE_TARGET_DP,
@@ -440,7 +451,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
                         color: selected ? palette.textPrimary : palette.textSupporting,
                       }}
                     >
-                      {item.label}
+                      {item.label}{item.label === 'Check-in' && dueCount > 0 ? ` (${dueCount})` : ''}
                     </Text>
                   </Pressable>
                 );
@@ -478,6 +489,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
             {headerBar}
             {syntheticBanner}
             {liveRegion}
+            {walkthroughReturn}
             <View style={styles.contentHost}>{children}</View>
           </View>
         </View>
@@ -493,6 +505,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
       {headerBar}
       {syntheticBanner}
       {liveRegion}
+      {walkthroughReturn}
       <View style={styles.contentHost}>{children}</View>
 
       {!hideBottomBar ? (
@@ -515,7 +528,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
                 testID={`tab-${tab.route}`}
                 onPress={() => navigateTo(tab.route)}
                 accessibilityRole="tab"
-                accessibilityLabel={tab.label}
+                accessibilityLabel={tab.route === 'checkin' && dueCount ? `Check-in, ${dueCount} due` : tab.label}
                 accessibilityState={{ selected }}
                 style={{
                   flex: 1,
@@ -541,7 +554,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
                     color: selected ? palette.textPrimary : palette.textSupporting,
                   }}
                 >
-                  {tab.label}
+                  {tab.label}{tab.route === 'checkin' && dueCount > 0 ? ` (${dueCount})` : ''}
                 </Text>
               </Pressable>
             );

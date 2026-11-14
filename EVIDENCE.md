@@ -1,5 +1,32 @@
 # CrewSignal Verification & Release Evidence (`EVIDENCE.md`)
 
+## Issue #23 Continuous Integration
+
+[GitHub Actions CI](../../actions/workflows/ci.yml) records shared, parity, mobile, desktop, and website job results for every pull request and push to `main`. The desktop job runs locked Rust tests on `windows-latest`.
+
+Local verification on Windows with the workflow's Node `24.18.0` passed all four TypeScript checks, 73 shared tests, 54 mobile tests, 34 desktop frontend tests, 15 website tests, and both frontend builds. The shared test run used LF bytes for the CSV and font license fixtures to match the Linux checkout. `actionlint` accepted the workflow. The clean-source verifier passed with 42 matching shared files per target and exited with status 1 when a temporary unsynced edit was introduced.
+
+The first hosted run passed the shared, parity, desktop (including Rust), and website jobs. The mobile typecheck failed to resolve Node built-in imports in the SQLite review test. The mobile TypeScript configuration now includes Node types.
+
+## Scheduled check-in prompts
+
+| Verification level | Result |
+| --- | --- |
+| Source checks | Shared sync and clean-source verification passed across all three targets. |
+| Harness | Added SIM-SCHEDULE coverage for a past interval, first check-in, removal of a schedule, metric-only notification text, and opening the Windows blood pressure form. Harness execution is pending. Vitest could not load the test module from the sandbox temporary path, and the workspace dependency install failed with EPERM. |
+| Emulator | Pending. No Android emulator or ADB tooling was available. |
+| Installed devices | Pending on offline Android phone, Android tablet and installed Windows. Windows notifications require CrewSignal to be open. The Windows Rust lockfile and native build also remain pending because Cargo was unavailable. |
+
+Device verification should enable notifications explicitly, confirm a due reminder offline with only the metric name, then disable the schedule and confirm no further reminder. Open the prompted check-in and skip it to verify the existing skipped event without creating a reading.
+
+## Issue #11 Getting Started Verification
+
+On November 14, 2026, the working changes based on `9f3e66c` passed shared and native-app type checks, 34 Windows UI tests, 54 Android harness tests, the Windows frontend build, and the Android JavaScript export (`expo export --platform android --no-bytecode`). Clean-source verification matched 42 shared files across all targets.
+
+The Windows Playwright harness at 768 × 1024 blocked external requests on first launch. It verified keyboard entry, heading focus, tab order, return focus, the 44 CSS pixel entry target, and zero axe violations in the walkthrough. The Windows UI harness exercised the Demo walkthrough, report preview, the return to a draft in Review, and opening the walkthrough with a Personal profile active.
+
+The Android React Native harness exercised the walkthrough at 390 × 844 and 768 × 1024, including 200% text scale on the tablet viewport. It verified the 48 dp entry target, report preview without saving or sharing, and hardware Back to a draft with the entered glucose value and selected unit intact. These were simulated viewport and accessibility checks. Installed Windows Narrator and Android TalkBack, physical-device layout, and first launch with the device network disabled remain pending.
+
 ## Issue #9 Unusual Entry Verification
 
 On November 14, 2026, the working changes based on `996afdf` passed TypeScript checks across the shared, website, desktop, and Android projects. The 72 shared tests covered unusual entries, both temperature and glucose units, per-row CSV warnings, confirmation before commit, and preservation of the entered values and the Needs recheck flag. The website and desktop frontend builds, 15 website harness tests, and 33 desktop harness tests passed.
@@ -473,6 +500,9 @@ The automated lifecycle checks for `S10`, `G07` and `G12` passed on the fix bran
 | Explorer 3D model on installed Windows app (§10.4) | `S13`, `G09`, `G11` | OPEN | NSIS-installed build on Windows 10/11 with WebView2. Open Explorer offline, rotate, reset and select each region, then repeat from the list. Check Narrator, keyboard focus, High Contrast (forced colours) and minimise/restore. Record cold load and responsiveness on that hardware. |
 | Explorer 3D model on installed Android phone and tablet (§10.4) | `S13`, `G09`, `G11` | OPEN, needs an installed APK | The APK must be prebuilt with `expo-gl`. Choose "3D model (preview)" in portrait and landscape and check that rotation coexists with page scrolling. Check TalkBack, large text, reduced motion and background/return. Record GL errors, model size and cold load. Set `ANDROID_MODEL_DEFAULT = true` only after this passes. |
 | Automated security review of `47324b8` | Review coverage | NO VERDICT (HTTP 429) | Run the review explicitly against the implementation revision once the service is available. |
+| Android cloud backup and storage wording ([#17](https://github.com/silentshiro-g1thub/crewsignal-spaceapps/issues/17)) | Privacy | PREBUILD VERIFIED / APK OPEN | Expo 58.0.25 prebuild generated `mobile/android/app/src/main/AndroidManifest.xml` with `android:allowBackup="false"` on `<application>`. Verify the packaged manifest when an Android SDK build is available. The copy audit covered Android, Windows and website screens. Help and the install notes describe local storage, backup and export contents. App-level encryption at rest for databases and exported files is outside the submission scope. Some Android devices may still transfer app data directly between devices. |
+
+**Issue #17 checks.** On Windows with Node 24.22.1, the patch based on `4bb2035` passed type checks for Android, Windows and the website. The Android harness passed 54 tests, Windows passed 34 on rerun with a 20-second timeout after a restore test timed out at five seconds, and the website passed 15. The Windows restore test also passed on its own with the default timeout. The clean-source check found existing shared-file differences in the Android and Windows copies of `guidance.ts`. Both copies differ from the canonical source only in import order at `4bb2035`.
 
 ---
 
@@ -587,6 +617,20 @@ Implementation checkout `8b67a8cc959c16aa261addcd53ba8e8232147875`. The audited 
 
 To close S05/G04 for this entry path, run the harnesses and repeat the normal check-in on each installed target. Flag `350` bpm, switch profiles, close the app and reopen offline. Confirm Review retains the flag in its original profile. Save and confirm one flagged row in History, JSON, CSV and the printable report. Use `350oops` as the malformed control. Verify a flagged sleep period is absent from fallback reference samples and personalized actions, then log an independent compatible reading and confirm comparison is available.
 
+## 9. Native tester downloads (upstream issue #15)
+
+Verification on November 14, 2026 used the working changes based on `4bb2035940f3c2b4a16dc112abd91208cdec7758`. The fork and upstream returned no published release assets through the public GitHub API.
+
+| Check | Result |
+| --- | --- |
+| Source hygiene and shared parity | `node scripts/verify-clean-source.mjs` passed with 42 matching shared files per target after syncing the desktop and mobile guidance copies. |
+| Website | TypeScript, all 15 unit tests, and the production PWA build passed. A targeted Edge smoke check passed against the built site, covering the download section, both pending states and navigation into the browser demo. The updated landing-page Playwright test passed. Four other cases failed in the full Edge run, involving Explorer interaction, offline service worker behavior and duplicate Overview text. |
+| Shared core | TypeScript passed. The unit suite had 70 passes and three failures. Two assertions compare byte-exact fixtures or font licenses against this Windows checkout's CRLF files. The evidence registry assertion expects eight sources and the current registry has 17. |
+| Android release | Preview profile pins the SDK 58 EAS image. Mobile TypeScript, all 54 Jest tests on a serial rerun, and the 955-module Android Hermes export passed. No team-signed APK was built or published here. Phone and tablet install, TalkBack, offline restart and upgrade checks are open. |
+| Windows release | Added an x64 per-user NSIS candidate with the WebView2 offline installer override. Desktop TypeScript, 34 unit tests and the frontend build passed. The native build stopped at Cargo metadata because Cargo is unavailable on this host. No installer was published. Clean VM, runtime installation, trust prompts, offline restart and upgrade checks are open. |
+| Download links | The site shows pending verification for both native platforms. Signed-out downloads and SHA-256 checks require the final published files. |
+
+Use [the native release checklist](RELEASING.md) to record the artifact versions, hashes, signers, source commit, devices and OS builds once tested.
 ## Sleep guidance acknowledgement identity — 2026-11-14
 
 Implementation/tested code commit: `1e296509b052e550d574a0b595ef2ca7d4e58a97` on local branch `fix/guidance-review-identity`. Source checkout base: `3d9d2c3297b05eceaafbf258ab90f1830df4e400`. Tests ran from the full native Windows source clone at `H:\crewsignal-desktop\guidance-review-fix`; the original checkout at `H:\spaceapps-crewsignal\crewsignal-spaceapps` is outside this session's writable roots and has not been changed by this work.
@@ -751,3 +795,50 @@ portal requirements and intended judging/site/download URLs before submission.
 Preserve current hosting and legacy routes during review; use the prior working
 deployment if the new deploy fails. Do not publish native source, Personal data,
 backups, workspace plans or unavailable installer links with the site.
+
+
+## Silentshiro split merge resolution - November 14, 2026 (Refs #8)
+
+Native merge parents: 9804832819f92dd0be8bcaa1f9d8c7674dbbfdaf (kennz-branch)
+and 77b24fad908a159a3d945c7dc2596641e246d4dd (incoming main).
+Tested native resolution code commit: 1b3255df3fc9197ed04ad83016fd3de70a8b2096.
+Tested site update code commit: 044033bae077427959dddb9724ca25196c81e5d7, based on site edb34fbcc7a1865659db9e8022895707876f0989.
+These are local verification commits; the user's native merge is left staged
+for GitHub Desktop's Continue merge, and site changes are staged separately.
+
+Resolution: combine native README with incoming release/install and data-storage
+guidance; keep the exact 17-source ID/date assertions; keep website/ removed
+including the two newly added website files; remove the incoming website CI job
+from native CI. Preserve incoming Windows/Android features and platform guides.
+Port every incoming website-owned change since 07e592a into the separate site:
+Help storage disclosure, native download status/config, Overview accessibility
+and schedule copy, and browser checks. Refresh all 43 vendored shared files from
+77b24fad908a159a3d945c7dc2596641e246d4dd. The 3D explorer and prior standalone fixes remain.
+
+### Harness results
+
+- node shared/scripts/sync-to-targets.mjs --write all: PASS, 43 files each for
+  desktop and mobile. The original working merge had CRLF/LF differences; the
+  handoff normalizes only managed copies to the existing committed LF bytes.
+- node scripts/verify-clean-source.mjs: PASS, strict 43-file native target parity.
+- node --test scripts/export-site-shared.test.mjs: PASS, 1 export regression.
+- npm --prefix shared run typecheck: PASS.
+- npm --prefix shared test: PASS, 100 tests in 9 files.
+- Site npm run verify:snapshot, npm run typecheck, npm test, npm run build: PASS;
+  43 manifest entries, 18 unit tests, production PWA with 22 precache entries.
+- SITE_TEST_ORIGIN=http://127.0.0.1:4188 node node_modules/@playwright/test/cli.js test --config test-results/split.config.ts:
+  PASS, 16 Chromium tests including incoming download status, Help/Overview
+  journeys, offline reload, synthetic imports, 3D interactions and fallbacks.
+  Temporary config imports checked-in Playwright config, overrides baseURL and
+  outputDir, disables its webServer, and enables --use-gl=angle
+  --use-angle=swiftshader --enable-unsafe-swiftshader against production preview.
+- Both prepared trees have no unmerged paths or conflict markers. Cached Node
+  dependencies were reused; fresh network dependency installation was not run.
+
+### Installed-app results
+
+Not rerun: installed Windows, Android phone/tablet, Rust/native installer builds,
+deployment, or signed-out judging links. Native dependency and device limitations
+recorded in the preceding split entry still apply. Browser results are harness
+evidence only. No GitHub writes, merges, or deployment changes are performed by
+the resolver. Review and commit the native merge and site changes separately.

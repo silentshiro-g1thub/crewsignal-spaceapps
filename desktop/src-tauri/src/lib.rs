@@ -452,6 +452,7 @@ fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), CommandEr
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // Never panic on storage problems: Help and recovery must stay reachable.

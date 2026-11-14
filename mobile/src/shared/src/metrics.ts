@@ -15,6 +15,7 @@ import {
   type MoodLabel,
   type Observation,
   type ObservationTiming,
+  type ProfileConfig,
   type SleepType,
   type TemperatureUnit,
 } from './contracts';
@@ -25,6 +26,7 @@ import {
 } from './conversions';
 import {
   buildInstantTiming,
+  evaluateMetricSchedule,
   buildPeriodTiming,
   missionDayAndTimeToUtc,
   parseHHMM,
@@ -822,6 +824,40 @@ export function getLatestObservationsByMetric(
     }
   }
   return latest;
+}
+
+export function getDueCheckIns(
+  profile: ProfileConfig | null,
+  observations: readonly Observation[],
+  nowUtc: string,
+) {
+  if (!profile) return [];
+  const latest = getLatestObservationsByMetric(observations);
+  return METRIC_ORDER.map((metricId) => evaluateMetricSchedule({
+    metricId,
+    latestObservation: latest[metricId],
+    schedule: profile.schedules[metricId] ?? null,
+    referenceNowUtc: nowUtc,
+  })).filter(({ status }) => status === 'due_no_entries' || status === 'past_interval');
+}
+
+export function getCheckInReminders(profile: ProfileConfig, observations: readonly Observation[]) {
+  const latest = getLatestObservationsByMetric(observations);
+  return METRIC_ORDER.flatMap((metricId) => {
+    const schedule = profile.schedules[metricId];
+    if (!schedule?.enabled) return [];
+    const timing = latest[metricId]?.timing;
+    const observedAt = timing?.kind === 'instant' ? timing.observedAtUtc : timing?.reportedAtUtc;
+    const dueAt = observedAt
+      ? Date.parse(observedAt) + (Math.round(schedule.intervalHours * 60) + 0.5) * 60_000
+      : Date.parse(schedule.configuredAtUtc);
+    if (!Number.isFinite(dueAt)) return [];
+    return [{
+      id: `crewsignal-check-in:${profile.profileId}:${metricId}:${schedule.configuredAtUtc}:${dueAt}`,
+      dueAt,
+      title: `${METRIC_DEFINITIONS[metricId].shortLabel} check-in is due`,
+    }];
+  });
 }
 
 export function countCoveredMetricTypes(

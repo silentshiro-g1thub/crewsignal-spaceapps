@@ -45,6 +45,7 @@ export function CheckInRoute() {
     saveDraftToStore,
     openModal,
     navigate,
+    route,
     showToast,
     announce,
     currentReferenceNowUtc,
@@ -67,7 +68,7 @@ export function CheckInRoute() {
 
   // Initialize blank draft cleanly if user visits Check-in without an active draft or receipt
   useEffect(() => {
-    if (!activeDraft && !savedReceipt && activeProfile) {
+    if (route === "check_in" && !activeDraft && !savedReceipt && activeProfile) {
       const missionDay = Math.max(
         1,
         computeMissionDay(currentReferenceNowUtc, activeProfile.missionEpochUtc),
@@ -91,6 +92,7 @@ export function CheckInRoute() {
     activeProfile,
     currentReferenceNowUtc,
     savedReceipt,
+    route,
     setActiveDraft,
     setDraftRetentionFailed,
   ]);

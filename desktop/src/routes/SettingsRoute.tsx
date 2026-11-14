@@ -1,3 +1,4 @@
+import { ScheduledNotificationSetting } from '../components/ScheduledNotifications';
 import { useEffect, useState } from "react";
 import {
   createNewReferenceVersion,
@@ -432,6 +433,7 @@ export function SettingsRoute() {
               Marks Overview cells as Past interval when an optional user-configured interval elapses.
             </p>
           </div>
+          <ScheduledNotificationSetting />
           <div className="form-grid-2">
             <div className="field-group">
               <label className="field-label" htmlFor="sched-metric">

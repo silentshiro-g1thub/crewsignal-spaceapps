@@ -1,5 +1,9 @@
 # CrewSignal — Windows Desktop App (`source/desktop/`)
 
+## Try CrewSignal
+
+The Windows installer is pending release verification. Once published, download the versioned `CrewSignal_<version>_x64-setup.exe` from **Try CrewSignal** on the landing page or from the release notes. On Windows 10 or 11 x64, run the installer under your Windows account and follow the prompts. Check that the displayed publisher or unsigned status matches the release notes. Open **CrewSignal** from Start and explore **Overview** in the synthetic SIM-01 profile. Disconnect and reopen CrewSignal to try it offline. Check the release notes for the exact installer's WebView2 and offline first-install results.
+
 CrewSignal is an offline-first spaceflight & extreme-environment physiological self-monitoring desktop application built with **Tauri 2**, **React 19**, **TypeScript**, **Vite**, and **Rust `rusqlite` SQLite** (`bundled`).
 
 > **Scope & Safety Notice:** CrewSignal is an independent manual-entry observation and personal-reference prototype. It does not diagnose disease, assess fitness for duty, prescribe treatments, or imply NASA, CDC, or NIST endorsement.
@@ -17,19 +21,16 @@ CrewSignal is an offline-first spaceflight & extreme-environment physiological s
 
 ---
 
-## Microsoft Edge WebView2 Prerequisite & Offline Installer Option
+## Build the Windows release candidate
 
-- Tauri 2 on Windows uses **Microsoft Edge WebView2 Runtime** (pre-installed on Windows 11; verified `157.0.4341.46` on the build host).
-- `src-tauri/tauri.conf.json` configures the **per-user NSIS Windows installer** (`installMode: "currentUser"`) with `webviewInstallMode: { "type": "downloadBootstrapper" }` so standard online Windows 10/11 installations without WebView2 can fetch the Microsoft Evergreen WebView2 bootstrapper cleanly without administrator elevation when installing per-user.
-- **Offline installer option:** `downloadBootstrapper` needs network access on a computer without WebView2. For an offline-capable installer, change `bundle.windows.webviewInstallMode` in `src-tauri/tauri.conf.json` to:
-  ```json
-  "webviewInstallMode": {
-    "type": "offlineInstaller",
-    "silent": true
-  }
-  ```
-  The pinned `@tauri-apps/cli 2.12.4` schema allows only `type` and `silent` on `offlineInstaller`; it rejects a `path` field. The Tauri CLI downloads Microsoft's standalone WebView2 runtime installer while bundling, so the build machine needs network access, and the NSIS installer grows by about 127 MB. The result still needs a test on a clean offline Windows VM without WebView2 before release (see `EVIDENCE.md`).
-- To ship a specific WebView2 build instead, `fixedRuntime` is the only mode that takes a `path`, pointing to an extracted fixed-version runtime folder (about 180 MB). It is not used here.
+Use the per-user NSIS x64 installer and the checked-in Tauri override below. The build host needs network access to download the WebView2 offline installer. The base configuration uses an online bootstrapper for standard builds. Test the bundled candidate on a clean, disconnected Windows VM without WebView2 before choosing it for offline first install. Record signing, system prompts and offline restart in the [native release checklist](../RELEASING.md).
+
+```powershell
+npm ci
+npm run tauri:build -- --target x86_64-pc-windows-msvc --config src-tauri/tauri.offline.conf.json -- --locked
+```
+
+Run this from `desktop/`. The installer is in `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`. See the [Tauri Windows installer guide](https://v2.tauri.app/distribute/windows-installer/).
 
 ---
 
@@ -65,7 +66,7 @@ This directory (`source/desktop/`) is self-contained and bundles its synced copy
 
 ```powershell
 # 1. Install frontend dependencies
-npm install
+npm ci
 
 # 2. Typecheck & frontend unit/integration suite
 npm run typecheck
@@ -81,7 +82,7 @@ npm run build
 npm run test:e2e
 
 # 5. Build Windows x64 per-user NSIS installer
-npx tauri build
+npm run tauri:build -- --target x86_64-pc-windows-msvc --config src-tauri/tauri.offline.conf.json -- --locked
 ```
 
 ---

@@ -18,7 +18,7 @@ function RouteSwitch() {
     case "overview":
       return <OverviewRoute />;
     case "check_in":
-      return <CheckInRoute />;
+      return null;
     case "explorer":
       return <ExplorerRoute />;
     case "trends":
@@ -38,12 +38,24 @@ function RouteSwitch() {
   }
 }
 
+function AppContent() {
+  const { route, helpReturnRoute, gettingStarted } = useApp();
+  const showCheckIn = route === "check_in";
+  const keepCheckIn = helpReturnRoute === "check_in" && (route === "help" || gettingStarted);
+  return (
+    <AppShell>
+      {(showCheckIn || keepCheckIn) && (
+        <div hidden={!showCheckIn}><CheckInRoute /></div>
+      )}
+      <RouteSwitch />
+    </AppShell>
+  );
+}
+
 export function App() {
   return (
     <AppProvider>
-      <AppShell>
-        <RouteSwitch />
-      </AppShell>
+      <AppContent />
       <AppModals />
     </AppProvider>
   );

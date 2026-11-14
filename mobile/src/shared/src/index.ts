@@ -5,6 +5,7 @@ export * from './metrics';
 export * from './references';
 export * from './readingStatus';
 export * from './guidance';
+export * from './gettingStarted';
 export * from './interchange';
 export * from './transactions';
 export * from './tokens';

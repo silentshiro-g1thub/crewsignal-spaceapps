@@ -34,6 +34,32 @@ describe("CrewSignal Desktop Canonical Vectors & UI Flows", () => {
     resetMockStore();
   });
 
+  it("opens Getting started from Demo Overview and returns to a draft in Review", async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Getting started" }));
+    expect(await screen.findByRole("heading", { name: "Getting started" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Open Sleep Trends" }));
+    expect(await screen.findByRole("heading", { name: /^Trends$/ })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Back to Getting started" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open Reports preview" }));
+    expect(await screen.findByRole("heading", { name: "Filtered report preview" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Back to Getting started" }));
+    fireEvent.click(screen.getByRole("button", { name: "Return to previous screen" }));
+    expect(await screen.findByText(/11 observations across 5 of 6 types/i)).toBeVisible();
+
+    fireEvent.click(screen.getAllByRole("button", { name: /^Check-in$/ })[0]!);
+    fireEvent.click(await screen.findByRole("button", { name: /Load Day 42 07:18 BP draft/i }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next: Review" }));
+    await screen.findByRole("heading", { name: /Review before adding to your log/i });
+    fireEvent.click(screen.getAllByRole("button", { name: /^Help$/ })[0]!);
+    fireEvent.click(await screen.findByRole("button", { name: "Getting started" }));
+    fireEvent.click(screen.getByRole("button", { name: "Help procedures and sources" }));
+    expect(screen.getByRole("heading", { name: "Cached reference summaries" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Return to previous screen" }));
+    expect(await screen.findByRole("heading", { name: /Review before adding to your log/i })).toBeVisible();
+    expect(screen.getByText("118/76 mmHg")).toBeVisible();
+  }, 15000);
+
   it("opens a private report draft with the readings shown in the Overview prompt", async () => {
     render(<App />);
 
@@ -203,6 +229,17 @@ describe("CrewSignal Desktop Canonical Vectors & UI Flows", () => {
     expect(await screen.findByLabelText("Heart rate (bpm)")).toHaveValue("");
   });
 
+  it("opens a due blood pressure check-in from SIM-SCHEDULE", async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Load SIM-SCHEDULE fixture" }));
+    fireEvent.click(screen.getAllByRole("button", { name: /^Overview$/ })[0]!);
+    await screen.findByRole("heading", { name: "Due now" });
+    expect(screen.getByRole("button", { name: "Check-in, 1 due" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Log blood pressure" }));
+    expect(await screen.findByLabelText("Systolic (mmHg)")).toBeInTheDocument();
+  });
+
   it("opens close guard dialog when unfinished draft exists and triggers close request", async () => {
     render(<App />);
     await screen.findByText(/11 observations across 5 of 6 types/i);
@@ -253,6 +290,13 @@ describe("CrewSignal Desktop Canonical Vectors & UI Flows", () => {
 
     await screen.findByText(/Personal profile created/i);
     fireEvent.click(screen.getAllByRole("button", { name: /^Overview$/i })[0]!);
+    expect(await screen.findByRole("heading", { name: /No observations yet/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Getting started" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /^Help$/ })[0]!);
+    fireEvent.click(screen.getByRole("button", { name: "Getting started" }));
+    expect(screen.getByText(/Your Personal profile stays active/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Open Demo Overview" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Return to previous screen" }));
     expect(await screen.findByRole("heading", { name: /No observations yet/i })).toBeInTheDocument();
   });
 

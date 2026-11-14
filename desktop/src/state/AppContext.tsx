@@ -21,6 +21,7 @@ import {
   type ReadingReportScope,
   type BodySystemId,
   type CheckInDraft,
+  type GettingStartedDestination,
   type MetricId,
   type MetricSchedule,
   type PersonalReference,
@@ -99,6 +100,12 @@ interface AppContextValue {
 
   route: AppRoute;
   navigate: (nextRoute: AppRoute, reportScope?: ReadingReportScope) => void;
+  helpReturnRoute: AppRoute;
+  gettingStarted: boolean;
+  openGettingStarted: () => void;
+  openGettingStartedStep: (destination: GettingStartedDestination) => void;
+  showHelpProcedures: () => void;
+  returnFromHelp: () => void;
   readingReportScope: ReadingReportScope | undefined;
   selectedBodySystem: BodySystemId;
   setSelectedBodySystem: (id: BodySystemId) => void;
@@ -178,6 +185,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [systemTheme, setSystemTheme] = useState<"dark" | "light">(resolveSystemTheme);
   const [route, setRoute] = useState<AppRoute>("overview");
+  const [helpReturnRoute, setHelpReturnRoute] = useState<AppRoute>("overview");
+  const [gettingStarted, setGettingStarted] = useState(false);
   const [readingReportScope, setReadingReportScope] = useState<ReadingReportScope>();
   const [selectedBodySystem, setSelectedBodySystem] =
     useState<BodySystemId>("sleep_cognition");
@@ -455,12 +464,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return allProfiles.find((p) => p.profileId === snapshot.activeProfileId) ?? allProfiles[0] ?? null;
   }, [snapshot, allProfiles]);
 
+  const [wallClockUtc, setWallClockUtc] = useState(() => new Date().toISOString());
+  useEffect(() => {
+    const update = () => setWallClockUtc(new Date().toISOString());
+    update();
+    const timer = window.setInterval(update, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const currentReferenceNowUtc = useMemo(() => {
     if (activeProfile?.mode === "demo" && activeProfile.snapshotUtc) {
       return activeProfile.snapshotUtc;
     }
-    return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-  }, [activeProfile]);
+    return wallClockUtc.replace(/\.\d{3}Z$/, "Z");
+  }, [activeProfile, wallClockUtc]);
 
   const activeReferencesByMetric = useMemo<Record<MetricId, PersonalReference | null>>(() => {
     const empty: Record<MetricId, PersonalReference | null> = {
@@ -523,12 +540,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [snapshot, activeProfile, currentReferenceNowUtc, refreshSnapshot]);
 
-  const navigate = useCallback((nextRoute: AppRoute, reportScope?: ReadingReportScope) => {
-    setReadingReportScope(nextRoute === "reports" ? reportScope : undefined);
+  const showRoute = useCallback((nextRoute: AppRoute) => {
     setRoute(nextRoute);
     const main = document.getElementById("main-content");
     if (main) main.focus({ preventScroll: true });
   }, []);
+
+  const navigate = useCallback((nextRoute: AppRoute, reportScope?: ReadingReportScope) => {
+    if (nextRoute === "help" && route !== "help" && !gettingStarted) setHelpReturnRoute(route);
+    setGettingStarted(false);
+    setReadingReportScope(nextRoute === "reports" ? reportScope : undefined);
+    showRoute(nextRoute);
+  }, [gettingStarted, route, showRoute]);
+
+  function openGettingStarted() {
+    if (route !== "help" && !gettingStarted) setHelpReturnRoute(route);
+    setGettingStarted(true);
+    showRoute("help");
+  }
+
+  function openGettingStartedStep(destination: GettingStartedDestination) {
+    if (activeProfile?.mode !== "demo") return;
+    if (destination === "trends") setSelectedTrendMetric("sleep");
+    setReadingReportScope(undefined);
+    showRoute(destination);
+  }
+
+  function showHelpProcedures() {
+    setGettingStarted(false);
+    showRoute("help");
+  }
+
+  function returnFromHelp() {
+    setGettingStarted(false);
+    showRoute(helpReturnRoute);
+  }
 
   const setAppearance = useCallback(
     async (appearance: AppPreferences["appearance"]) => {
@@ -725,6 +771,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const hhmm = formatUtcTimeHHMM(nowUtc);
       const draft: CheckInDraft =
         initialDraft ??
+        (activeDraftRef.current?.profileId === activeProfile.profileId && activeDraftRef.current.metricId === metricId
+          ? activeDraftRef.current : snapshot?.profileData.drafts.find((draft) => draft.metricId === metricId)) ??
         createBlankDraft({
           draftId: `draft-${metricId}-${Date.now()}`,
           profileId: activeProfile.profileId,
@@ -750,6 +798,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       currentReferenceNowUtc,
       navigate,
       preferences.displayUnits,
+      snapshot?.profileData.drafts,
       saveDraftToStore,
     ],
   );
@@ -786,6 +835,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     diagnosticHooks,
     route,
     navigate,
+    helpReturnRoute,
+    gettingStarted,
+    openGettingStarted,
+    openGettingStartedStep,
+    showHelpProcedures,
+    returnFromHelp,
     readingReportScope,
     selectedBodySystem,
     setSelectedBodySystem,

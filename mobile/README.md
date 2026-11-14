@@ -1,5 +1,9 @@
 # CrewSignal Mobile (`source/mobile`)
 
+## Try CrewSignal
+
+The Android phone and tablet APK is pending release verification. Once published, use the versioned APK link in **Try CrewSignal** on the landing page or in the release notes. The source targets Android 7.0 (API 24) or later. Confirm the minimum version and supported ABI listed with the published APK. Open the APK from Downloads and approve installation from that source if prompted. Open **CrewSignal** and explore **Overview** in the synthetic SIM-01 profile. After installing, turn on airplane mode and reopen CrewSignal to try it offline.
+
 Packaged offline-first **CrewSignal** client for Android phones and tablets (NASA Space Apps 2026 · Team POP N' SEB), built with **Expo SDK 58**, **React Native**, **TypeScript**, and **`expo-sqlite`**.
 
 > **Safety & scope notice**: CrewSignal is a personal physiological wellness logbook and synthetic scenario prototype (`SIM-01`). It does not diagnose, treat, cure, or prevent any medical condition.
@@ -67,7 +71,7 @@ Run all commands from `source/mobile/`:
 
 ```bash
 # Install dependencies (Node 24+ recommended for node:sqlite test driver)
-npm install
+npm ci
 
 # TypeScript strict check
 npm run typecheck
@@ -93,9 +97,28 @@ node shared/scripts/sync-to-targets.mjs --check mobile
 
 ---
 
-## Native Build Prerequisites & Environment Status
+## Build a signed Android release
 
+From a clean checkout of the release commit, run `npm ci` in `mobile/`. Use the team-owned EAS project and its existing Android signing credential for `org.spaceapps.popnseb.crewsignal`. If the checkout is unlinked, have the team link it to its project before building. Preserve the package ID and certificate across upgrades. Increase the local Android `versionCode` for an upgrade and record the verified EAS CLI version and build image from the build log. Keep credentials outside Git.
+
+```sh
+eas build --profile preview --platform android
+```
+
+The `preview` profile builds a standalone signed APK with bundled JavaScript and assets. It pins Node `22.23.2` and Expo's SDK 58 Android worker with Java 17 and NDK `27.1.12297006`. Verify the build log and the APK's certificate, minimum API and ABIs before sharing it. Test the supplied APK on both a phone and a tablet. See the [Expo build images](https://docs.expo.dev/build-reference/infrastructure/#android-server-images), [internal distribution guide](https://docs.expo.dev/build/internal-distribution/) and [native release checklist](../RELEASING.md).
+
+For local native reproduction on Windows, clone directly into a short path such as `C:\cs` and keep the Android SDK in a short path such as `C:\sdk`. Set `ANDROID_HOME` and `JAVA_HOME` and install SDK Platform 37 and Build Tools `37.0.0` plus NDK `27.1.12297006`. Use the locked Expo `58.0.25` / React Native `0.88.1` dependencies, run `npm run prebuild:android` and use the generated Gradle `9.4.1` wrapper. JDK `26.0.1` reached native compilation in the prior audit. That build hit Windows path limits before producing an APK. Check the exact generated SDK, build-tools and NDK settings before building and record the successful combination when it is verified.
+
+From the generated `mobile/android/` directory, run `./gradlew :app:assembleRelease` on Unix or `gradlew.bat :app:assembleRelease` on Windows for a local build check. Use the EAS APK for tester distribution. Local builds can use a debug certificate or an emulator-only ABI, so confirm both before using a local package in an upgrade test.
 The following toolchain status was observed during verification on the Windows 11 host:
 - **Available and verified**: `node v24.18.0`, `npm 11.16.0`, JDK `26.0.1`, TypeScript, Jest, and Android Hermes export.
 - **Unavailable on the verification host**: Android SDK (`ANDROID_HOME` unset, `adb` / `sdkmanager` / `gradle` absent) and EAS CLI.
 - Build and run locally with `npm run android` in an Android SDK environment. To generate a preview APK with EAS, run `eas build --profile preview --platform android`. Install the APK on Android phones and tablets to test TalkBack and native print preview.
+
+## Where your data lives
+
+CrewSignal stores readings and drafts in `files/SQLite/crewsignal_v1.db` within the app's private storage. The native build opts out of Android cloud backup with `android.allowBackup: false` in `app.json`. After prebuild, confirm the `<application>` in `android/app/src/main/AndroidManifest.xml` has `android:allowBackup="false"`.
+
+A fresh reinstall starts without your previous Personal records unless you restore a profile backup in Reports. Some Android devices can still transfer app data directly between devices. Before uninstalling or moving devices, save a full profile backup from Reports and copy it outside the app. That backup includes the selected profile's readings, mood and notes. Report exports contain selected readings and exclude mood and notes by default. CrewSignal does not encrypt the database or exported files.
+
+[Android Auto Backup documentation](https://developer.android.com/identity/data/autobackup#EnablingAutoBackup)

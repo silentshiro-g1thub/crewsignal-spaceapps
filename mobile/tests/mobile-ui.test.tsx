@@ -149,7 +149,8 @@ describe('CrewSignal Mobile UI, responsiveness, accessibility & recovery workflo
       await fireEvent.press(screen.getByText('Mark reviewed'));
       await waitFor(() => expect(screen.queryByText('Mark reviewed')).toBeNull());
       source.summaryVersion = oldVersion + ' source-only regression';
-      await fireEvent.press(screen.getByTestId('tab-actions'));
+      await fireEvent.press(screen.getByTestId('tab-more'));
+      await fireEvent.press(await screen.findByTestId('more-nav-actions'));
       const card = await screen.findByTestId('actions-sleep-insight-card');
       const review = within(card).getByText('Mark reviewed');
       await act(async () => { fireEvent.press(review); fireEvent.press(review); });
@@ -171,7 +172,7 @@ describe('CrewSignal Mobile UI, responsiveness, accessibility & recovery workflo
     await fireEvent.changeText(await screen.findByTestId('new-personal-profile-label'),'Reference entry harness');
     await fireEvent.press(screen.getByTestId('create-personal-profile-btn'));
     await waitFor(async()=>expect((await store.loadAppSnapshot()).active.profile.mode).toBe('personal'));
-    setViewport(width, 1100);
+    await act(async () => { setViewport(width, 1100); });
     const card=await screen.findByTestId('settings-references-card');
     const write=jest.spyOn(store,'upsertPersonalReference');
     await fireEvent.press(within(card).getByText('Blood pressure'));
@@ -325,6 +326,36 @@ describe('CrewSignal Mobile UI, responsiveness, accessibility & recovery workflo
     await fireEvent.press(screen.getByTestId('metric-chip-mood'));
     await fireEvent.press(await screen.findByTestId('checkin-review-button'));
     expect(await screen.findByText('How is your mood right now?')).toBeTruthy();
+  });
+
+  test.each([[390, 844, 1], [768, 1024, 2]])('Getting started works at %ipx and returns to an unchanged draft', async (width, height, fontScale) => {
+    setViewport(width, height, 2, fontScale);
+    const back = jest.spyOn(ReactNative.BackHandler, 'addEventListener');
+    const { io } = await renderTestApp();
+    const gettingStarted = await screen.findByRole('button', { name: 'Getting started' });
+    expect(flattenMinHeight(gettingStarted.props.style)).toBeGreaterThanOrEqual(48);
+    expect(flattenMinWidth(gettingStarted.props.style)).toBeGreaterThanOrEqual(48);
+    await fireEvent.press(gettingStarted);
+    expect(screen.getByRole('header', { name: 'Getting started' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Open Reports preview' }));
+    expect(await screen.findByText(/Filtered report preview/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Back to Getting started' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Return to previous screen' }));
+    expect(await screen.findByText(/11 committed entries/)).toBeTruthy();
+    expect(io.savedFiles).toHaveLength(0);
+    expect(io.sharedFiles).toHaveLength(0);
+
+    await fireEvent.press(screen.getByTestId('overview-primary-checkin-cta'));
+    await fireEvent.press(await screen.findByTestId('metric-chip-blood_glucose'));
+    await fireEvent.press(await screen.findByTestId('unit-chip-mmol/L'));
+    await fireEvent.changeText(screen.getByTestId('input-primary'), '5.4');
+    await fireEvent.press(screen.getByTestId('header-help-button'));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Getting started' }));
+    const hardwareBack = back.mock.lastCall?.[1];
+    expect(hardwareBack).toBeDefined();
+    await act(async () => { expect(hardwareBack?.({ type: 'hardwareBackPress', timeStamp: 0 })).toBe(true); });
+    expect((await screen.findByTestId('input-primary')).props.value).toBe('5.4');
+    expect(screen.getByTestId('unit-chip-mmol/L').props.accessibilityState.selected).toBe(true);
   });
 
   test('Persistent Help mid-draft, theme switching preservation, Unavailable modal, & load failure Help path', async () => {

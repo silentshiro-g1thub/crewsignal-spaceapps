@@ -1,3 +1,5 @@
+import { ScheduledNotifications } from './ScheduledNotifications';
+import { getDueCheckIns } from '../shared/src';
 import React, { useState } from "react";
 import {
   Activity,
@@ -57,7 +59,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const {
     route,
     navigate,
+    gettingStarted,
+    openGettingStarted,
     activeProfile,
+    snapshot,
     activeDraft,
     currentReferenceNowUtc,
     toast,
@@ -68,6 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     openDraftForMetric,
   } = useApp();
 
+  const dueCount = getDueCheckIns(activeProfile, snapshot?.profileData.observations ?? [], currentReferenceNowUtc).length;
   const [moreOpen, setMoreOpen] = useState(false);
 
   const missionDay = activeProfile
@@ -93,6 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         Skip to content
       </a>
 
+      <ScheduledNotifications />
       <aside className="app-sidebar" aria-label="Primary navigation">
         <div className="sidebar-brand">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -119,7 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={itemRoute}
               type="button"
               className="nav-item"
-              aria-label={label}
+              aria-label={itemRoute === 'check_in' && dueCount ? `Check-in, ${dueCount} due` : label}
               aria-current={route === itemRoute ? "page" : undefined}
               onClick={() => {
                 setMoreOpen(false);
@@ -130,6 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="nav-item-label" aria-hidden="true">
                 <span className="brand-title">{label}</span>
                 <span className="brand-compact-mark">{compactLabel}</span>
+                {itemRoute === 'check_in' && dueCount > 0 && <span> ({dueCount})</span>}
               </span>
             </button>
           ))}
@@ -207,6 +215,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main id="main-content" className="app-main" tabIndex={-1}>
+          {gettingStarted && route !== "help" && (
+            <div style={{ marginBottom: 16 }}>
+              <button type="button" className="btn-secondary" onClick={openGettingStarted}>
+                Back to Getting started
+              </button>
+            </div>
+          )}
           {pendingUpdateBlocked && activeDraft ? (
             <div className="notice-banner notice-banner-review" style={{ marginBottom: 16 }} role="status">
               <div>
@@ -296,7 +311,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             }}
           >
             <Icon size={18} aria-hidden="true" />
-            <span>{compactLabel}</span>
+            <span>{compactLabel}{itemRoute === 'check_in' && dueCount > 0 ? ` (${dueCount})` : ''}</span>
           </button>
         ))}
         <button

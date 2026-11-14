@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { requestCheckInNotificationPermission } from '../components/ScheduledNotifications';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   METRIC_DEFINITIONS,
@@ -58,10 +59,11 @@ export function SettingsScreen(): React.ReactElement {
   const [reviewingReferenceId, setReviewingReferenceId] = useState<string | undefined>();
   const [confirmedReference, setConfirmedReference] = useState(false);
   const [savingReference, setSavingReference] = useState(false);
+  const [referenceStatus, setReferenceStatus] = useState<string | null>(null);
   useEffect(() => setConfirmedReference(false), [refValueText,refSecondaryText,refMethod,refContext]);
   useEffect(() => {
     setRefValueText(''); setRefSecondaryText(''); setRefMethod(''); setRefContext(''); setRefErrors({});
-    setReviewingReferenceId(undefined); setConfirmedReference(false); setStatusMessage(null);
+    setReviewingReferenceId(undefined); setConfirmedReference(false); setReferenceStatus(null);
   }, [activeProfile?.profileId, refMetric]);
   const [refNote, setRefNote] = useState('Personal baseline update');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -111,14 +113,14 @@ export function SettingsScreen(): React.ReactElement {
     const validation = validateManualReference({metricId:refMetric,primaryText:refValueText,secondaryText:refSecondaryText,method:refMethod,context:refContext,unit:metricDef.canonicalUnit,confirmedPreviousReferenceId:reviewingReferenceId});
     setRefErrors(validation.errors);
     if (!validation.valid || !validation.value || !validation.capture) return;
-    if (reviewingReferenceId && !confirmedReference) { setStatusMessage('Confirm both BP inputs, method and context before creating a replacement version.'); return; }
+    if (reviewingReferenceId && !confirmedReference) { setReferenceStatus('Confirm both BP inputs, method and context before creating a replacement version.'); return; }
     if (savingReference) return;
     setSavingReference(true);
     try {
       await savePersonalReference({metricId:refMetric,provenance:'user_updated',method:refMethod,context:refContext,unit:metricDef.canonicalUnit,value:validation.value,manualCapture:validation.capture});
       setRefValueText(''); setRefSecondaryText(''); setRefMethod(''); setRefContext(''); setReviewingReferenceId(undefined);
-      setStatusMessage('Saved new personal reference version.');
-    } catch { setStatusMessage('Reference was not saved. Your entered values are retained; retry when storage is available.'); }
+      setReferenceStatus('Saved new personal reference version.');
+    } catch { setReferenceStatus('Reference was not saved. Your entered values are retained; retry when storage is available.'); }
     finally { setSavingReference(false); }
   };
 
@@ -131,9 +133,28 @@ export function SettingsScreen(): React.ReactElement {
         subtitle="Profile mode, mission clock, display units, appearance & scoped reset"
       />
 
+      {referenceStatus ? (
+        <CalmBanner title="Personal reference" message={referenceStatus} tone="neutral" />
+      ) : null}
       {statusMessage ? (
         <CalmBanner title="Settings updated" message={statusMessage} tone="neutral" />
       ) : null}
+
+      <PanelCard>
+        <SelectableChip
+          label={preferences.checkInNotifications ? 'Check-in notifications on' : 'Check-in notifications off'}
+          selected={preferences.checkInNotifications === true}
+          onPress={async () => {
+            try {
+              const enabled = !preferences.checkInNotifications && await requestCheckInNotificationPermission();
+              await updatePreferences({ checkInNotifications: enabled });
+              if (!enabled && !preferences.checkInNotifications) setStatusMessage('Notification permission is unavailable.');
+            } catch {
+              setStatusMessage('Could not change notification settings.');
+            }
+          }}
+        />
+      </PanelCard>
 
       {/* Appearance Switcher — preserves route/draft/selection */}
       <PanelCard testID="settings-appearance-card">
