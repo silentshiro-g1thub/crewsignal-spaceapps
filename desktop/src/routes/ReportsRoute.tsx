@@ -5,6 +5,7 @@ import {
   buildReportBundle,
   computeMissionDay,
   CSV_REVIEW_FIXTURE_CSV,
+  describeReportFormats,
   DEFAULT_REPORT_METRICS,
   formatObservationDisplay,
   generateCsvTemplate,
@@ -568,6 +569,7 @@ export function ReportsRoute() {
                   >
                     Print / Save PDF (Light A4)
                   </button>
+                  <ul>{describeReportFormats(reportBundle, { csv: false, printIncludesMetadata: true }).map((line) => <li key={line}>{line}</li>)}</ul>
                 </div>
               </div>
 

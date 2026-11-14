@@ -28,14 +28,14 @@ describe('Complete educational acknowledgement identity', () => {
     }
     expect(isInsightReviewCurrent(reviewed, value)).toBe(true);
   });
-  it('rejects missing sources, missing versions, incomplete legacy fields and bare observation IDs', () => {
+  it('rejects incomplete review identities and skips insights without a reference', () => {
     const value = current(); const reviewed = markInsightReviewed(value, SIM_01_SNAPSHOT_UTC);
     expect(isInsightReviewCurrent({ ...reviewed, sourceVersions: {} }, value)).toBe(false);
     expect(isInsightReviewCurrent({ ...reviewed, sourceIds: [] }, value)).toBe(false);
     expect(isInsightReviewCurrent({ ...reviewed, referenceId: undefined }, value)).toBe(false);
     expect(isInsightReviewCurrent({ ...reviewed, profileId: undefined }, value)).toBe(false);
     expect(() => markInsightReviewed({ ...value, sourceVersions: {} }, SIM_01_SNAPSHOT_UTC)).toThrow();
-    const generated = buildSleepInsight({ observation: SIM_01_SLEEP_OBSERVATIONS[6]!, reference: null, createdAtUtc: SIM_01_SNAPSHOT_UTC, reviewedObservationIds: new Set([SIM_01_SLEEP_OBSERVATIONS[6]!.observationId]) });
-    expect(generated?.status).toBe('active');
+    const generated = buildSleepInsight({ observation: SIM_01_SLEEP_OBSERVATIONS[6]!, reference: null, createdAtUtc: SIM_01_SNAPSHOT_UTC });
+    expect(generated).toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import {
   EVIDENCE_REGISTRY,
   formatUtcTimeHHMM,
   METRIC_DEFINITIONS,
+  MEASUREMENT_RESEARCH,
 } from "../shared/src";
 import { desktopBridge } from "../bridge/desktopBridge";
 import { useApp } from "../state/AppContext";
@@ -25,6 +26,7 @@ export function AppModals() {
     refreshSnapshot,
     showToast,
     navigate,
+    openResearch,
     clearSessionCommittedIds,
     resetDemo,
     deletePersonalProfile,
@@ -57,6 +59,12 @@ export function AppModals() {
               }}
             >
               View cached sources
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => {
+              closeModal();
+              openResearch(MEASUREMENT_RESEARCH[def.id]);
+            }}>
+              View measurement research
             </button>
             <button type="button" className="btn-primary" onClick={closeModal}>
               Close

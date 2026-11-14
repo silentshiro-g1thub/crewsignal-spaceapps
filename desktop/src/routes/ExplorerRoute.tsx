@@ -2,10 +2,14 @@ import { MeasurementEducation } from '../components/MeasurementEducation';
 import { useState } from "react";
 import {
   BODY_SYSTEM_DEFINITIONS,
+  BODY_SYSTEM_RESEARCH,
+  EVIDENCE_REGISTRY,
+  RADIATION_RESEARCH,
   compareObservationToReference,
   evaluateMetricSchedule,
   formatObservationDisplay,
   getLatestObservationsByMetric,
+  getMetricAction,
   getObservedMissionDay,
   getReadingStatus,
   METRIC_DEFINITIONS,
@@ -25,8 +29,10 @@ export function ExplorerRoute() {
     activeReferencesByMetric,
     currentReferenceNowUtc,
     navigate,
+    openResearch,
     setSelectedTrendMetric,
     openDraftForMetric,
+    openAction,
   } = useApp();
 
   const [detailTab, setDetailTab] = useState<"summary" | "context">("summary");
@@ -156,6 +162,7 @@ export function ExplorerRoute() {
                   {systemDef.metricIds.map((metricId) => {
                     const def = METRIC_DEFINITIONS[metricId];
                     const obs = latestByMetric[metricId];
+                    const action = getMetricAction(metricId);
                     const ref = activeReferencesByMetric[metricId];
                     const cmp = obs ? compareObservationToReference(obs, ref) : null;
                     const status = getReadingStatus(obs, cmp, evaluateMetricSchedule({
@@ -208,6 +215,9 @@ export function ExplorerRoute() {
 
                         <MeasurementEducation definition={def} />
                         <div className="row-wrap">
+                          <button type="button" className="btn-ghost" onClick={() => openAction(action.actionId)}>
+                            {action.title}
+                          </button>
                           <button
                             type="button"
                             className="btn-secondary"
@@ -239,12 +249,20 @@ export function ExplorerRoute() {
                   <strong>Boundary & limitation:</strong> {systemDef.limitation}
                 </div>
               </div>
-              <p style={{ margin: 0, fontSize: 14, color: "var(--text-body)" }}>
-                NASA Human Research Program standard measures emphasize pairing raw observations with method, body position/resting state, and period context rather than drawing cross-system diagnoses from single-spot measurements.
-              </p>
+              {[BODY_SYSTEM_RESEARCH[systemDef.id], RADIATION_RESEARCH].map((research) => (
+                <section className="panel-card stack-sm" key={research.sourceId}>
+                  <h3 className="panel-heading">
+                    {research === RADIATION_RESEARCH ? "Radiation research" : "Research for this system"}
+                  </h3>
+                  <p>{research.text}</p>
+                  <button type="button" className="btn-secondary" onClick={() => openResearch(research)}>
+                    {EVIDENCE_REGISTRY[research.sourceId]!.shortTitle}
+                  </button>
+                </section>
+              ))}
               <div className="row-wrap">
                 <button type="button" className="btn-secondary" onClick={() => navigate("sources")}>
-                  Inspect NASA & CDC sources
+                  View all sources
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => navigate("actions")}>
                   View available actions

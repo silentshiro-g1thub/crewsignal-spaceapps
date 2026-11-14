@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import {
   CANONICAL_ACCEPTANCE_VECTORS,
   CheckInDraftSchema,
+  ReportBundleSchema,
+  METRIC_DEFINITIONS,
   SIM_01_SLEEP_OBSERVATIONS,
   buildSleepInsight,
   compareObservationToReference,
@@ -48,6 +50,38 @@ import {
 } from '../scripts/sync-to-targets.mjs';
 
 describe('Reports, privacy exclusions, Backup, DraftRecovery, and CSV reconciliation', () => {
+  it('projects legacy restored observations without correction audit or metadata for absent rows', () => {
+    const bp = SIM_01_OBSERVATIONS.find((row) => row.metricId === 'blood_pressure')!;
+    const legacy = {
+      ...bp, note: 'READING_SENTINEL', qualityNote: 'QUALITY_SENTINEL',
+      correctionHistory: [{
+        correctionId: 'legacy-correction', correctedAtUtc: SIM_01_SNAPSHOT_UTC,
+        reason: 'CORRECTION_SENTINEL', previousEntered: bp.entered, previousCanonical: bp.canonical,
+        previousTiming: bp.timing, previousMethod: bp.method, previousContext: bp.context,
+      }],
+    };
+    const backup = { ...EXAMPLE_BACKUP_BUNDLE, observations: [legacy] };
+    const { observations } = JSON.parse(JSON.stringify(backup)) as typeof backup;
+    const options = {
+      profile: SIM_01_PROFILE, references: SIM_01_REFERENCES, startDay: 42, endDay: 42,
+      generatedAtUtc: SIM_01_SNAPSHOT_UTC,
+      observations: [...observations, { ...bp, profileId: 'different-profile' }],
+    };
+    const report = buildReportBundle(options);
+    expect(report.observations).toEqual([{ ...legacy, note: null, qualityNote: null, correctionHistory: [] }]);
+    expect(report.evidence.map((e) => e.sourceId)).toEqual(METRIC_DEFINITIONS.blood_pressure.evidenceIds);
+    expect(report.references.every((r) => r.metricId === 'blood_pressure')).toBe(true);
+    expect(JSON.stringify(report)).not.toContain('SENTINEL');
+    expect(serializeObservationsToCsv(report.observations)).not.toContain('SENTINEL');
+    const withNotes = buildReportBundle({ ...options, includeNotes: true });
+    expect(withNotes.observations[0]).toEqual({ ...legacy, correctionHistory: [] });
+    const empty = buildReportBundle({ ...options, selectedMetricIds: ['sleep'] });
+    expect(empty).toMatchObject({ observations: [], references: [], evidence: [] });
+    expect(buildReportBundle({ ...options, startDay: 1, endDay: 1 })).toMatchObject({ observations: [], references: [], evidence: [] });
+    expect(ReportBundleSchema.parse({ ...report, observations: [legacy] }).observations[0]).toEqual(legacy);
+    expect(backup.observations[0]).toEqual(legacy);
+  });
+
   it('excludes mood and notes by default in ReportBundle (rows + metadata) and tracks pre/post optional BP counts', () => {
     // Inject a synthetic private note on a copy to verify stripping across rows & metadata
     const withNote: Observation[] = SIM_01_OBSERVATIONS.map((o, idx) =>

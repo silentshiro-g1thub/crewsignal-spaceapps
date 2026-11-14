@@ -99,6 +99,78 @@
       "relatedActionIds": []
     },
     {
+      "sourceId": "nasa-hrp-risks",
+      "title": "Risks of Human Spaceflight",
+      "shortTitle": "NASA HRP risks",
+      "publisher": "NASA Human Research Program",
+      "url": "https://www.nasa.gov/hrp/risks/",
+      "checkedDate": "2026-11-14",
+      "sourceUpdatedDate": null,
+      "summaryVersion": "Version 1",
+      "summaryText": "NASA groups the risks it studies by the ways spaceflight can affect crew health and performance, including changes to the cardiovascular, immune and musculoskeletal systems.",
+      "limitations": "The overview describes risks across missions. It cannot determine a crew member's risk from a check-in.",
+      "cachedAvailable": true,
+      "offlineAccessNote": "Available offline: summary",
+      "knownUpdateAvailableVersion": null,
+      "knownUpdateCheckedDate": null,
+      "relatedMetricIds": [],
+      "relatedActionIds": []
+    },
+    {
+      "sourceId": "nasa-ongoing-hrp-research",
+      "title": "Ongoing HRP Research",
+      "shortTitle": "NASA HRP research",
+      "publisher": "NASA Human Research Program",
+      "url": "https://www.nasa.gov/hrp/ongoing-hrp-research/",
+      "checkedDate": "2026-11-14",
+      "sourceUpdatedDate": null,
+      "summaryVersion": "Version 1",
+      "summaryText": "NASA lists studies that collect crew health and performance data. ARCHeR combines wearable activity and sleep data with crew feedback to study sleep in flight.",
+      "limitations": "Study methods and equipment differ from self-reported sleep and mood check-ins.",
+      "cachedAvailable": true,
+      "offlineAccessNote": "Available offline: summary",
+      "knownUpdateAvailableVersion": null,
+      "knownUpdateCheckedDate": null,
+      "relatedMetricIds": [],
+      "relatedActionIds": []
+    },
+    {
+      "sourceId": "csa-radiation-monitoring",
+      "title": "Monitoring radiation for astronaut health",
+      "shortTitle": "CSA radiation monitoring",
+      "publisher": "Canadian Space Agency",
+      "url": "https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp",
+      "checkedDate": "2026-11-14",
+      "sourceUpdatedDate": "2026-02-26",
+      "summaryVersion": "Version 1",
+      "summaryText": "The Canadian Active Neutron Spectrometer (CANS) is a dedicated instrument designed to measure neutron radiation exposure in space.",
+      "limitations": "The instrument measures the neutron component of radiation. CrewSignal has no radiation measurement or exposure estimate.",
+      "cachedAvailable": true,
+      "offlineAccessNote": "Available offline: summary",
+      "knownUpdateAvailableVersion": null,
+      "knownUpdateCheckedDate": null,
+      "relatedMetricIds": [],
+      "relatedActionIds": []
+    },
+    {
+      "sourceId": "csa-iss-experiments",
+      "title": "Why do we conduct science experiments in space?",
+      "shortTitle": "CSA space experiments",
+      "publisher": "Canadian Space Agency",
+      "url": "https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp",
+      "checkedDate": "2026-11-14",
+      "sourceUpdatedDate": null,
+      "summaryVersion": "Version 1",
+      "summaryText": "Researchers use the International Space Station to study health changes in weightlessness and prepare for longer missions, with some findings also informing research on Earth.",
+      "limitations": "The explainer describes research goals. It provides no interpretation thresholds for individual check-ins.",
+      "cachedAvailable": true,
+      "offlineAccessNote": "Available offline: summary",
+      "knownUpdateAvailableVersion": null,
+      "knownUpdateCheckedDate": null,
+      "relatedMetricIds": [],
+      "relatedActionIds": []
+    },
+    {
       "sourceId": "nasa-human-research-roadmap",
       "title": "NASA Human Research Roadmap — Risks",
       "shortTitle": "Human Research Roadmap",
@@ -204,7 +276,9 @@
       "relatedMetricIds": [
         "heart_rate"
       ],
-      "relatedActionIds": []
+      "relatedActionIds": [
+        "action-review-pulse"
+      ]
     },
     {
       "sourceId": "aha-blood-pressure",
@@ -224,7 +298,9 @@
       "relatedMetricIds": [
         "blood_pressure"
       ],
-      "relatedActionIds": []
+      "relatedActionIds": [
+        "action-review-blood-pressure"
+      ]
     },
     {
       "sourceId": "nasa-standing-risk",
@@ -265,7 +341,9 @@
       "relatedMetricIds": [
         "blood_glucose"
       ],
-      "relatedActionIds": []
+      "relatedActionIds": [
+        "action-review-glucose"
+      ]
     },
     {
       "sourceId": "nasa-human-adaptation",
@@ -305,7 +383,9 @@
       "relatedMetricIds": [
         "body_temperature"
       ],
-      "relatedActionIds": []
+      "relatedActionIds": [
+        "action-review-temperature"
+      ]
     },
     {
       "sourceId": "nasa-body-temperature",
@@ -365,7 +445,9 @@
       "relatedMetricIds": [
         "mood"
       ],
-      "relatedActionIds": []
+      "relatedActionIds": [
+        "action-review-mood-context"
+      ]
     }
   ],
   "actions": [
@@ -378,7 +460,7 @@
       "disabledReason": null,
       "applicability": "Use your approved mission procedures for individual decisions.",
       "limitation": "This comparison describes your entry; it does not assess fitness for duty or prescribe hours, medications, caffeine, lighting doses, or schedule changes.",
-      "triggerSummary": "Triggered when a compatible Main sleep entry differs from your personal sleep reference.",
+      "triggerSummary": "Compare a Main sleep entry with your personal sleep reference when the method and context match.",
       "steps": [
         "Check the recorded sleep period and whether any sleep window included awake time.",
         "Review your approved rest schedule for recent shift changes or irregular timing.",
@@ -392,6 +474,111 @@
       "sourceVersion": "Version 1",
       "ruleId": "rule-sleep-vs-reference",
       "ruleVersion": "crewsignal-sleep-guidance-v1",
+      "reviewStatus": "reviewed_educational"
+    },
+    {
+      "actionId": "action-review-pulse",
+      "title": "Review pulse measurement",
+      "category": "educational",
+      "badgeLabel": "Educational · Prototype",
+      "enabled": true,
+      "disabledReason": null,
+      "applicability": "Activity and the way you count your pulse can affect how comparable readings are.",
+      "limitation": "For reviewing your log. This step cannot diagnose a condition or determine treatment.",
+      "triggerSummary": "Use this step to review how you logged the reading. A personalized comparison requires a compatible reference.",
+      "steps": [
+        "If you repeat the reading, rest first and use the same counting method. Note recent activity in the log."
+      ],
+      "sourceIds": [
+        "nlm-pulse"
+      ],
+      "sourceVersion": "Version 1",
+      "ruleId": "rule-heart-rate-context",
+      "ruleVersion": "crewsignal-heart-rate-guidance-v1",
+      "reviewStatus": "reviewed_educational"
+    },
+    {
+      "actionId": "action-review-blood-pressure",
+      "title": "Review cuff setup",
+      "category": "educational",
+      "badgeLabel": "Educational · Prototype",
+      "enabled": true,
+      "disabledReason": null,
+      "applicability": "Cuff placement, arm support and posture affect the measurement context.",
+      "limitation": "For reviewing your log. This step cannot diagnose a condition or determine treatment.",
+      "triggerSummary": "Use this step to review how you logged the reading. A personalized comparison requires a compatible reference.",
+      "steps": [
+        "Check the cuff placement and arm support. Record the posture and keep both numbers together."
+      ],
+      "sourceIds": [
+        "aha-blood-pressure"
+      ],
+      "sourceVersion": "Version 1",
+      "ruleId": "rule-blood-pressure-context",
+      "ruleVersion": "crewsignal-blood-pressure-guidance-v1",
+      "reviewStatus": "reviewed_educational"
+    },
+    {
+      "actionId": "action-review-glucose",
+      "title": "Review glucose measurement context",
+      "category": "educational",
+      "badgeLabel": "Educational · Prototype",
+      "enabled": true,
+      "disabledReason": null,
+      "applicability": "Meter technique and meal timing help you compare entries taken under similar conditions.",
+      "limitation": "For reviewing your log. This step cannot diagnose a condition or determine treatment.",
+      "triggerSummary": "Use this step to review how you logged the reading. A personalized comparison requires a compatible reference.",
+      "steps": [
+        "Check the meter and test-strip instructions. Note when you last ate and keep the original unit in the log."
+      ],
+      "sourceIds": [
+        "fda-glucose-meter"
+      ],
+      "sourceVersion": "Version 1",
+      "ruleId": "rule-blood-glucose-context",
+      "ruleVersion": "crewsignal-blood-glucose-guidance-v1",
+      "reviewStatus": "reviewed_educational"
+    },
+    {
+      "actionId": "action-review-temperature",
+      "title": "Review temperature measurement site",
+      "category": "educational",
+      "badgeLabel": "Educational · Prototype",
+      "enabled": true,
+      "disabledReason": null,
+      "applicability": "Readings taken at different sites can differ.",
+      "limitation": "For reviewing your log. This step cannot diagnose a condition or determine treatment.",
+      "triggerSummary": "Use this step to review how you logged the reading. A personalized comparison requires a compatible reference.",
+      "steps": [
+        "Record the thermometer type and measurement site. Use the same site and method if you repeat the reading."
+      ],
+      "sourceIds": [
+        "nlm-temperature"
+      ],
+      "sourceVersion": "Version 1",
+      "ruleId": "rule-body-temperature-context",
+      "ruleVersion": "crewsignal-body-temperature-guidance-v1",
+      "reviewStatus": "reviewed_educational"
+    },
+    {
+      "actionId": "action-review-mood-context",
+      "title": "Review mood context",
+      "category": "educational",
+      "badgeLabel": "Educational · Prototype",
+      "enabled": true,
+      "disabledReason": null,
+      "applicability": "A note about recent sleep or workload can help you remember the context of a self-report.",
+      "limitation": "For reviewing your log. This step cannot diagnose a condition or determine treatment.",
+      "triggerSummary": "Review context alongside your mood history.",
+      "steps": [
+        "Review your mood history and note relevant sleep or workload changes alongside the entry."
+      ],
+      "sourceIds": [
+        "nasa-behavioral-measures"
+      ],
+      "sourceVersion": "Version 1",
+      "ruleId": "rule-mood-context",
+      "ruleVersion": "crewsignal-mood-guidance-v1",
       "reviewStatus": "reviewed_educational"
     },
     {
@@ -505,14 +692,6 @@
         "Use the time the reading was observed.",
         "Record measurement method and resting context when known."
       ],
-      "evidenceIds": [
-        "nasa-hrp-hazards",
-        "nasa-standard-measures",
-        "nlm-pulse",
-        "nasa-standing-risk"
-      ],
-      "supportsUnavailableInstrument": true,
-      "optionalSchedulingSupported": true,
       "whyItMatters": {
         "text": "Pulse tells you how many times your heart beats in one minute.",
         "sourceId": "nlm-pulse"
@@ -524,7 +703,15 @@
       "howToMeasure": {
         "text": "While resting, feel for your pulse at your wrist with two fingers. Count the beats for one minute.",
         "sourceId": "nlm-pulse"
-      }
+      },
+      "evidenceIds": [
+        "nasa-hrp-hazards",
+        "nasa-standard-measures",
+        "nlm-pulse",
+        "nasa-standing-risk"
+      ],
+      "supportsUnavailableInstrument": true,
+      "optionalSchedulingSupported": true
     },
     "blood_pressure": {
       "id": "blood_pressure",
@@ -555,14 +742,6 @@
         "Use the time the reading was observed.",
         "Record cuff method and body context when known."
       ],
-      "evidenceIds": [
-        "nasa-hrp-hazards",
-        "nasa-standard-measures",
-        "aha-blood-pressure",
-        "nasa-standing-risk"
-      ],
-      "supportsUnavailableInstrument": true,
-      "optionalSchedulingSupported": true,
       "whyItMatters": {
         "text": "The top number shows pressure when the heart beats. The bottom number shows pressure between beats.",
         "sourceId": "aha-blood-pressure"
@@ -574,7 +753,15 @@
       "howToMeasure": {
         "text": "Follow your cuff instructions. For a seated reading, rest first and support your bare upper arm at heart level. Record both numbers from the same reading.",
         "sourceId": "aha-blood-pressure"
-      }
+      },
+      "evidenceIds": [
+        "nasa-hrp-hazards",
+        "nasa-standard-measures",
+        "aha-blood-pressure",
+        "nasa-standing-risk"
+      ],
+      "supportsUnavailableInstrument": true,
+      "optionalSchedulingSupported": true
     },
     "blood_glucose": {
       "id": "blood_glucose",
@@ -608,14 +795,6 @@
         "This app converts concentration units for review. It does not supply a measurement procedure.",
         "Follow your approved mission and device instructions."
       ],
-      "evidenceIds": [
-        "cdc-nhanes-glucose",
-        "nasa-standard-measures",
-        "fda-glucose-meter",
-        "nasa-human-adaptation"
-      ],
-      "supportsUnavailableInstrument": true,
-      "optionalSchedulingSupported": true,
       "whyItMatters": {
         "text": "Blood glucose tells you how much sugar is in your blood at the time of the check.",
         "sourceId": "fda-glucose-meter"
@@ -627,7 +806,15 @@
       "howToMeasure": {
         "text": "Follow your meter instructions for using a blood sample and test strip. Record the result with the unit shown.",
         "sourceId": "fda-glucose-meter"
-      }
+      },
+      "evidenceIds": [
+        "cdc-nhanes-glucose",
+        "nasa-standard-measures",
+        "fda-glucose-meter",
+        "nasa-human-adaptation"
+      ],
+      "supportsUnavailableInstrument": true,
+      "optionalSchedulingSupported": true
     },
     "body_temperature": {
       "id": "body_temperature",
@@ -659,14 +846,6 @@
         "Record the measurement site/method when known; incompatible methods remain distinct.",
         "Use the observed mission time."
       ],
-      "evidenceIds": [
-        "nist-temperature-units",
-        "nasa-standard-measures",
-        "nlm-temperature",
-        "nasa-body-temperature"
-      ],
-      "supportsUnavailableInstrument": true,
-      "optionalSchedulingSupported": true,
       "whyItMatters": {
         "text": "Body temperature helps track changes such as fever. Readings can differ depending on where you measure.",
         "sourceId": "nlm-temperature"
@@ -678,7 +857,15 @@
       "howToMeasure": {
         "text": "Follow your thermometer instructions. Record the result, the unit, and where you measured, such as your mouth or ear.",
         "sourceId": "nlm-temperature"
-      }
+      },
+      "evidenceIds": [
+        "nist-temperature-units",
+        "nasa-standard-measures",
+        "nlm-temperature",
+        "nasa-body-temperature"
+      ],
+      "supportsUnavailableInstrument": true,
+      "optionalSchedulingSupported": true
     },
     "sleep": {
       "id": "sleep",
@@ -708,15 +895,6 @@
         "Entering 0h 0m explicitly logs Reported no sleep; leave blank if unrecorded.",
         "Only compatible Main sleep periods enter the sleep reference."
       ],
-      "evidenceIds": [
-        "nasa-sleep-risk",
-        "nasa-seven-ways-sleep",
-        "nasa-isolation-standard-measures",
-        "nasa-standard-measures",
-        "nih-sleep-diary"
-      ],
-      "supportsUnavailableInstrument": false,
-      "optionalSchedulingSupported": true,
       "whyItMatters": {
         "text": "Too little sleep can make it harder to stay alert and do your work.",
         "sourceId": "nasa-sleep-risk"
@@ -728,7 +906,16 @@
       "howToMeasure": {
         "text": "Estimate how long you actually slept and record the hours and minutes for that period.",
         "sourceId": "nih-sleep-diary"
-      }
+      },
+      "evidenceIds": [
+        "nasa-sleep-risk",
+        "nasa-seven-ways-sleep",
+        "nasa-isolation-standard-measures",
+        "nasa-standard-measures",
+        "nih-sleep-diary"
+      ],
+      "supportsUnavailableInstrument": false,
+      "optionalSchedulingSupported": true
     },
     "mood": {
       "id": "mood",
@@ -755,14 +942,6 @@
         "Mood starts unselected; no default score is chosen.",
         "Notes are optional and excluded from reports unless selected."
       ],
-      "evidenceIds": [
-        "nasa-isolation-standard-measures",
-        "nasa-standard-measures",
-        "nasa-behavioral-measures",
-        "nasa-hrp-hazards"
-      ],
-      "supportsUnavailableInstrument": false,
-      "optionalSchedulingSupported": true,
       "whyItMatters": {
         "text": "A mood check records how you feel. NASA studies mood as one sign of crew well-being.",
         "sourceId": "nasa-behavioral-measures"
@@ -774,7 +953,15 @@
       "howToMeasure": {
         "text": "Choose the option that best matches how you feel now. CrewSignal uses its own five choices.",
         "sourceId": "nasa-behavioral-measures"
-      }
+      },
+      "evidenceIds": [
+        "nasa-isolation-standard-measures",
+        "nasa-standard-measures",
+        "nasa-behavioral-measures",
+        "nasa-hrp-hazards"
+      ],
+      "supportsUnavailableInstrument": false,
+      "optionalSchedulingSupported": true
     }
   },
   "bodySystems": [

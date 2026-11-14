@@ -1,10 +1,21 @@
 import { ExternalLink, HardDrive } from "lucide-react";
-import { EVIDENCE_LIST, METRIC_DEFINITIONS } from "../shared/src";
+import { EVIDENCE_REGISTRY, EVIDENCE_LIST, METRIC_DEFINITIONS } from "../shared/src";
 import { desktopBridge } from "../bridge/desktopBridge";
 import { useApp } from "../state/AppContext";
 
 export function SourcesRoute() {
-  const { showToast, navigate } = useApp();
+  const { showToast, navigate, selectedResearch, researchReturnRoute } = useApp();
+
+  const sourceList = selectedResearch ? [EVIDENCE_REGISTRY[selectedResearch.sourceId]!] : EVIDENCE_LIST;
+
+  const handleCopyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast({ tone: "neutral", title: "Source URL copied" });
+    } catch {
+      showToast({ tone: "danger", title: "Could not copy source URL", detail: "Select and copy the URL shown on the card." });
+    }
+  };
 
   const handleOpenExternal = async (url: string, title: string) => {
     try {
@@ -13,7 +24,7 @@ export function SourcesRoute() {
       showToast({
         tone: "danger",
         title: "Could not open browser link",
-        detail: `${title}: ${String(err)}`,
+        detail: `${title}: ${String(err)}. You can copy the source URL.`,
       });
     }
   };
@@ -27,19 +38,19 @@ export function SourcesRoute() {
             Concise attributed research and unit-conversion summaries bundled offline. Opening full pages launches your system browser.
           </p>
         </div>
-        <button type="button" className="btn-secondary" onClick={() => navigate("actions")}>
-          Back to Actions
+        <button type="button" className="btn-secondary" onClick={() => navigate(selectedResearch ? researchReturnRoute : "actions")}>
+          {selectedResearch ? "Back to previous screen" : "Back to Actions"}
         </button>
       </div>
 
       <div className="notice-banner" role="status">
         <div>
-          <strong>Independent prototype attribution:</strong> NASA, CDC, and NIST sources inform measurement context and exact unit equations. Neither affiliation nor endorsement is implied.
+          <strong>Independent prototype attribution:</strong> Bundled research sources provide mission and measurement context. Neither affiliation nor endorsement is implied.
         </div>
       </div>
 
       <div className="stack-md">
-        {EVIDENCE_LIST.map((ev) => (
+        {sourceList.map((ev) => (
           <section
             key={ev.sourceId}
             className="panel-card stack-sm"
@@ -60,7 +71,9 @@ export function SourcesRoute() {
               </span>
             </div>
 
+            {selectedResearch && <p>{selectedResearch.text}</p>}
             <p style={{ margin: 0, color: "var(--text-body)" }}>{ev.summaryText}</p>
+            <p style={{ overflowWrap: "anywhere", userSelect: "text" }}>{ev.url}</p>
 
             <div style={{ fontSize: 13, color: "var(--text-supporting)" }}>
               <strong>Limitation:</strong> {ev.limitations}
@@ -74,6 +87,9 @@ export function SourcesRoute() {
                   </span>
                 ))}
               </div>
+              <button type="button" className="btn-secondary" onClick={() => void handleCopyUrl(ev.url)}>
+                Copy source URL
+              </button>
               <button
                 type="button"
                 className="btn-secondary"

@@ -177,11 +177,14 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
     activeProfile,
     observations,
     nowUtc,
+    dueSchedules,
     isKeyboardVisible,
     isOfflineSimulated,
     liveAnnouncement,
   } = useCrewSignal();
 
+  const checkInCount = dueSchedules.length;
+  const checkInLabel = checkInCount ? `Check-in, ${checkInCount} due` : 'Check-in';
   const currentUtc = nowUtc();
   const dueCount = getDueCheckIns(activeProfile, observations, currentUtc).length;
   const missionDay = activeProfile
@@ -451,6 +454,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
                         color: selected ? palette.textPrimary : palette.textSupporting,
                       }}
                     >
+                      {item.route === 'checkin' && checkInCount ? `${item.label} (${checkInCount})` : item.label}
                       {item.label}{item.label === 'Check-in' && dueCount > 0 ? ` (${dueCount})` : ''}
                     </Text>
                   </Pressable>

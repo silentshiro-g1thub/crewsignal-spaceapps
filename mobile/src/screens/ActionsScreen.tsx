@@ -4,9 +4,9 @@ import {
   ACTION_CONTENT_LIST,
   EVIDENCE_REGISTRY,
   METRIC_DEFINITIONS,
-  buildSleepInsight,
+  buildMetricInsight,
+  METRIC_ACTION_IDS,
   getLatestObservationsByMetric,
-  isInsightReviewCurrent,
   findCurrentInsightReview,
   resolveActiveReference,
   type MetricId,
@@ -23,10 +23,10 @@ import {
 import { useCrewSignal } from '../state/CrewSignalContext';
 import { useCrewTheme } from '../theme/ThemeProvider';
 
-const ACTION_QUICK_METRIC: Record<string, MetricId | undefined> = {
-  'action-review-sleep-routine': 'sleep',
-  'action-check-measurement-context': 'blood_pressure',
-};
+const ACTION_QUICK_METRIC = new Map<string, MetricId>([
+  ...Object.entries(METRIC_ACTION_IDS).map(([metric, actionId]) => [actionId, metric as MetricId] as const),
+  ['action-check-measurement-context', 'blood_pressure'],
+]);
 
 export function ActionsScreen(): React.ReactElement {
   const { palette, fontSansMedium, fontSansRegular, fontMonoRegular } = useCrewTheme();
@@ -48,28 +48,26 @@ export function ActionsScreen(): React.ReactElement {
     [observations],
   );
 
-  const sleepInsight = useMemo(() => {
-    if (!activeProfile) return null;
-    const latestSleep = latestByMetric.sleep;
-    if (!latestSleep) return null;
-    const sleepRef = resolveActiveReference({
-      profileId: activeProfile.profileId,
-      metricId: 'sleep',
-      references,
-      observations,
-      nowUtc: nowUtc(),
-    });
-    return buildSleepInsight({
-      observation: latestSleep,
-      reference: sleepRef,
-      createdAtUtc: nowUtc(),
-    });
-  }, [activeProfile, insights, latestByMetric.sleep, nowUtc, observations, references]);
-
-  const savedSleepInsight = useMemo(() => {
-    if (!sleepInsight) return null;
-    return findCurrentInsightReview(insights, sleepInsight);
-  }, [insights, sleepInsight]);
+  const selectedContent =
+    ACTION_CONTENT_LIST.find((action) => action.actionId === selectedActionId) ?? ACTION_CONTENT_LIST[0]!;
+  const quickMetricId = ACTION_QUICK_METRIC.get(selectedContent.actionId);
+  const observation = quickMetricId ? latestByMetric[quickMetricId] : undefined;
+  const currentUtc = nowUtc();
+  const displayedInsight = activeProfile && quickMetricId && observation &&
+    METRIC_ACTION_IDS[quickMetricId] === selectedContent.actionId
+    ? buildMetricInsight(quickMetricId, {
+        observation,
+        reference: resolveActiveReference({
+          profileId: activeProfile.profileId,
+          metricId: quickMetricId,
+          references,
+          observations,
+          nowUtc: currentUtc,
+        }),
+        createdAtUtc: currentUtc,
+      })
+    : null;
+  const reviewed = findCurrentInsightReview(insights, displayedInsight);
 
   if (!activeProfile) {
     return (
@@ -81,33 +79,22 @@ export function ActionsScreen(): React.ReactElement {
     );
   }
 
-  const sleepReviewed =
-    savedSleepInsight && sleepInsight
-      ? isInsightReviewCurrent(savedSleepInsight, sleepInsight)
-      : false;
-
-  const displayedInsight = sleepInsight;
-
-  const selectedContent =
-    ACTION_CONTENT_LIST.find((a) => a.actionId === selectedActionId) ?? ACTION_CONTENT_LIST[0]!;
-  const quickMetricId = ACTION_QUICK_METRIC[selectedContent.actionId];
-
   return (
     <ScrollView
       contentContainerStyle={[styles.scrollContent, { backgroundColor: palette.surfaceCanvas }]}
     >
       <ScreenTitle
         title="Actions"
-        subtitle="Non-diagnostic mission habits & reference-linked sleep guidance"
+        subtitle="Educational next steps for your readings"
       />
 
       {displayedInsight ? (
-        <PanelCard testID="actions-sleep-insight-card">
+        <PanelCard testID={`actions-${displayedInsight.metricId}-insight-card`}>
           <View style={{ gap: 10 }}>
             <View style={styles.rowBetween}>
               <StatusBadge
-                label={sleepReviewed ? 'Reviewed' : 'Review'}
-                tone={sleepReviewed ? 'neutral' : 'review'}
+                label={reviewed ? 'Reviewed' : 'Review'}
+                tone={reviewed ? 'neutral' : 'review'}
               />
               <Text
                 style={{
@@ -136,12 +123,19 @@ export function ActionsScreen(): React.ReactElement {
                 color: palette.textBody,
               }}
             >
-              {displayedInsight.differenceText}
+              {`Reading ${displayedInsight.observationId} · Reference ${displayedInsight.referenceId} (v${displayedInsight.referenceVersion})`}
             </Text>
-            {sleepReviewed ? <Text>Reviewed {savedSleepInsight?.reviewedAtUtc}</Text> : null}
-            {displayedInsight.sourceIds.map(id => <ActionButton key={id} label={id + ' · ' + displayedInsight.sourceVersions[id]} onPress={() => navigateTo('sources')} variant="subtle" />)}
+            {reviewed && <Text style={{ color: palette.textBody }}>Reviewed {reviewed.reviewedAtUtc}</Text>}
+            {displayedInsight.sourceIds.map((sourceId) => (
+              <ActionButton
+                key={sourceId}
+                label={`${EVIDENCE_REGISTRY[sourceId]?.shortTitle ?? sourceId} · ${displayedInsight.sourceVersions[sourceId]}`}
+                onPress={() => navigateTo('sources')}
+                variant="subtle"
+              />
+            ))}
             <View style={styles.rowWrap}>
-              {!sleepReviewed ? (
+              {!reviewed ? (
                 <ActionButton
                   label="Mark reviewed"
                   onPress={() => void reviewInsight(displayedInsight)}
@@ -156,15 +150,7 @@ export function ActionsScreen(): React.ReactElement {
             </View>
           </View>
         </PanelCard>
-      ) : (
-        <CalmBanner
-          title="No active sleep review trigger"
-          message="Guidance activates only when logged observations fall meaningfully below your active personal reference."
-          tone="neutral"
-          actionLabel="Log Sleep"
-          onAction={() => startOrResumeCheckIn('sleep')}
-        />
-      )}
+      ) : null}
 
       <View style={{ gap: 6 }}>
         <EyebrowLabel>Offline indicator guidance</EyebrowLabel>
@@ -172,7 +158,7 @@ export function ActionsScreen(): React.ReactElement {
           {ACTION_CONTENT_LIST.map((item) => (
             <SelectableChip
               key={item.actionId}
-              label={item.badgeLabel}
+              label={item.title}
               selected={selectedContent.actionId === item.actionId}
               onPress={() => setSelectedActionId(item.actionId)}
             />

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   CSV_REVIEW_FIXTURE_CSV,
+  describeReportFormats,
   DEFAULT_REPORT_METRICS,
   EXAMPLE_BACKUP_BUNDLE,
   EXAMPLE_DRAFT_RECOVERY_BUNDLE,
@@ -748,6 +749,10 @@ export function ReportsScreen(): React.ReactElement {
                 .join(', ') || 'None'
             }`}
           </Text>
+
+          {describeReportFormats(reportBundle, { csv: true, printIncludesMetadata: false }).map((line) => (
+            <Text key={line} style={{ color: palette.textBody }}>{line}</Text>
+          ))}
 
           {reportBundle.observations.filter((obs) => obs.quality === 'questionable').map((obs) => (
             <Text key={obs.observationId} style={{ color: palette.textBody }}>

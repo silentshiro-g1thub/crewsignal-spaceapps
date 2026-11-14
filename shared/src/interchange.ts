@@ -103,11 +103,24 @@ export function buildReportBundle(options: BuildReportOptions): ReportBundle {
     const day = getObservedMissionDay(obs);
     if (day < options.startDay || day > options.endDay) continue;
 
-    // Strip private note text unless explicitly chosen
-    const sanitized: Observation = includeNotes
-      ? { ...obs }
-      : { ...obs, note: null, qualityNote: null };
-    filteredObservations.push(sanitized);
+    filteredObservations.push({
+      observationId: obs.observationId,
+      profileId: obs.profileId,
+      metricId: obs.metricId,
+      timing: obs.timing,
+      recordedAtUtc: obs.recordedAtUtc,
+      entered: obs.entered,
+      canonical: obs.canonical,
+      method: obs.method,
+      context: obs.context,
+      provenance: obs.provenance,
+      quality: obs.quality,
+      note: includeNotes ? obs.note : null,
+      qualityNote: includeNotes ? obs.qualityNote : null,
+      sourceDraftId: obs.sourceDraftId,
+      importBatchId: obs.importBatchId,
+      correctionHistory: [],
+    });
     countsByMetric[obs.metricId] = (countsByMetric[obs.metricId] ?? 0) + 1;
   }
 
@@ -116,12 +129,11 @@ export function buildReportBundle(options: BuildReportOptions): ReportBundle {
     (r) =>
       r.profileId === options.profile.profileId &&
       r.status === 'active' &&
-      includedSet.has(r.metricId),
+      coveredTypes.has(r.metricId),
   );
 
-  // Collect evidence citations ONLY for included metrics (no excluded metadata leakage)
   const evidenceIds = new Set<string>();
-  for (const m of includedMetricIds) {
+  for (const m of METRIC_ORDER.filter((id) => coveredTypes.has(id))) {
     for (const eid of METRIC_DEFINITIONS[m].evidenceIds) {
       evidenceIds.add(eid);
     }
@@ -166,6 +178,23 @@ export function buildReportBundle(options: BuildReportOptions): ReportBundle {
   };
 
   return ReportBundleSchema.parse(bundle);
+}
+
+export function describeReportFormats(
+  report: ReportBundle,
+  options: { csv: boolean; printIncludesMetadata: boolean },
+): string[] {
+  const references = report.references.map((r) => `${METRIC_DEFINITIONS[r.metricId].name} v${r.version}`).join(', ') || 'none';
+  const citations = report.evidence.map((e) => e.title).join(', ') || 'none';
+  const metadata = `References: ${references}. Citations: ${citations}.`;
+  const notes = report.includeNotes ? 'Includes current reading and quality notes.' : 'Notes excluded.';
+  const rowNotes = report.includeNotes ? 'Includes current reading notes only.' : 'Notes excluded.';
+  return [
+    `JSON. ${notes} ${metadata}`,
+    ...(options.csv ? [`CSV. ${rowNotes} References and citations excluded.`] : []),
+    `Print. ${rowNotes} ${options.printIncludesMetadata ? metadata : 'References and citations excluded.'}`,
+    'Correction history is available in the full profile backup.',
+  ];
 }
 
 export interface BackupPreviewSummary {

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import {
   METRIC_DEFINITIONS,
+  MEASUREMENT_RESEARCH,
   ENTRY_CONFIRMED_NOTE,
   ENTRY_WARNING_HELP,
   METRIC_ORDER,
@@ -82,6 +83,7 @@ export function CheckInScreen(): React.ReactElement {
     skipCurrentCheckIn,
     dismissSkipOutcome,
     navigateTo,
+    openResearch,
     startOrResumeCheckIn,
     announce,
   } = useCrewSignal();
@@ -548,6 +550,7 @@ export function CheckInScreen(): React.ReactElement {
           metricId={draft.metricId}
           onClose={() => setHelpModalOpen(false)}
           onOpenSources={() => navigateTo('sources')}
+          onOpenResearch={() => openResearch(MEASUREMENT_RESEARCH[draft.metricId])}
         />
       </ScrollView>
     );
@@ -1153,6 +1156,7 @@ export function CheckInScreen(): React.ReactElement {
         metricId={draft.metricId}
         onClose={() => setHelpModalOpen(false)}
         onOpenSources={() => navigateTo('sources')}
+        onOpenResearch={() => openResearch(MEASUREMENT_RESEARCH[draft.metricId])}
       />
       <SkipOrUnavailableModal
         visible={workflowModalMode !== null}

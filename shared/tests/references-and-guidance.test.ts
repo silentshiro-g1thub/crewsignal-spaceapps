@@ -6,6 +6,12 @@ import {
   DEFAULT_UNCONFIGURED_HELP,
   EVIDENCE_CHECKED_DATE,
   EVIDENCE_LIST,
+  EVIDENCE_REGISTRY,
+  BODY_SYSTEM_RESEARCH,
+  MEASUREMENT_RESEARCH,
+  MISSION_RESEARCH_SOURCE_IDS,
+  RADIATION_RESEARCH,
+  METRIC_ORDER,
   MF_01_FIXTURE,
   SIM_01_EPOCH_UTC,
   SIM_01_OBSERVATIONS,
@@ -15,6 +21,7 @@ import {
   SIM_01_SLEEP_OBSERVATIONS,
   SIM_01_SNAPSHOT_UTC,
   buildInstantTiming,
+  buildMetricInsight,
   buildPeriodTiming,
   buildRaiseReadingPrompt,
   buildReportBundle,
@@ -23,6 +30,7 @@ import {
   createNewReferenceVersion,
   deriveSevenDayFallbackReference,
   describeMissionContact,
+  getMetricAction,
   isInsightReviewCurrent,
   markInsightReviewed,
   resolveActiveReference,
@@ -356,16 +364,69 @@ describe('Personal reference lifecycle & 7-day fallback heuristic', () => {
 });
 
 describe('Controlled guidance, evidence registry, and Help registry', () => {
-  it('bundles the reviewed November 13 and 14 source inventory with cached summaries', () => {
-    const original = ['nasa-sleep-risk', 'nasa-seven-ways-sleep', 'nasa-standard-measures',
-      'nasa-hrp-hazards', 'nasa-human-research-roadmap', 'nasa-isolation-standard-measures',
-      'cdc-nhanes-glucose', 'nist-temperature-units'];
-    const added = ['nlm-pulse', 'aha-blood-pressure', 'nasa-standing-risk', 'fda-glucose-meter',
-      'nasa-human-adaptation', 'nlm-temperature', 'nasa-body-temperature', 'nih-sleep-diary',
-      'nasa-behavioral-measures'];
-    expect(EVIDENCE_LIST.map(src => src.sourceId).sort()).toEqual([...original, ...added].sort());
+  it.each(METRIC_ORDER)('provides a sourced next step for %s', (metricId) => {
+    const action = getMetricAction(metricId);
+    expect(action.enabled).toBe(true);
+    expect(action.steps).not.toHaveLength(0);
+    expect(action.applicability).toBeTruthy();
+    expect(action.limitation).toBeTruthy();
+    expect(action.sourceIds).not.toHaveLength(0);
+    for (const sourceId of action.sourceIds) {
+      expect(EVIDENCE_REGISTRY[sourceId]?.relatedMetricIds).toContain(metricId);
+      expect(EVIDENCE_REGISTRY[sourceId]?.relatedActionIds).toContain(action.actionId);
+    }
+  });
+
+  const glucose: Observation = {
+    ...makeHrObs('guidance-glucose', 42, '07:00', 90, SIM_01_SNAPSHOT_UTC),
+    metricId: 'blood_glucose',
+    entered: { kind: 'scalar', value: 90, unit: 'mg/dL', precision: 0 },
+    canonical: { kind: 'scalar', value: 90, unit: 'mg/dL', precision: 0, conversionVersion: CONVERSION_RULE_VERSION },
+    method: 'Fingerstick meter',
+  };
+
+  it.each([...SIM_01_OBSERVATIONS, glucose].filter((observation, index, all) =>
+    all.findIndex((other) => other.metricId === observation.metricId) === index,
+  ))('checks comparison eligibility for $metricId', (observation) => {
+    const metricId = observation.metricId;
+    const params = { observation, reference: null, createdAtUtc: SIM_01_SNAPSHOT_UTC };
+    expect(buildMetricInsight(metricId, params)).toBeNull();
+    if (observation.canonical.kind === 'mood_ordinal' || metricId === 'mood') return;
+
+    const value = observation.canonical;
+    const reference = {
+      ...SIM_01_REFERENCES[0]!,
+      referenceId: `guidance-reference-${metricId}`,
+      profileId: observation.profileId,
+      metricId,
+      method: observation.method,
+      context: observation.context,
+      unit: value.kind === 'scalar' ? value.unit : value.kind === 'blood_pressure' ? 'mmHg' : 'min',
+      value,
+    };
+    const insight = buildMetricInsight(metricId, { ...params, reference });
+    expect(insight).toMatchObject({
+      observationId: observation.observationId,
+      referenceId: reference.referenceId,
+      referenceVersion: reference.version,
+      ruleVersion: getMetricAction(metricId).ruleVersion,
+      comparisonAvailable: true,
+    });
+    if (!insight) throw new Error(`Missing ${metricId} insight`);
+    const reviewed = markInsightReviewed(insight, SIM_01_SNAPSHOT_UTC);
+    expect(isInsightReviewCurrent(reviewed, insight)).toBe(true);
+    expect(isInsightReviewCurrent(reviewed, { ...insight, referenceId: 'other-reference' })).toBe(false);
+    expect(buildMetricInsight(metricId, { ...params, reference: { ...reference, method: 'Another method' } })).toBeNull();
+    expect(buildMetricInsight(metricId, { ...params, reference: { ...reference, profileId: 'other-profile' } })).toBeNull();
+    expect(buildMetricInsight(metricId, { ...params, observation: { ...observation, quality: 'questionable' }, reference })).toBeNull();
+  });
+
+  it('bundles the original, measurement-education, and mission research sources with cached summaries', () => {
+    expect(EVIDENCE_LIST.filter((src) => src.checkedDate === EVIDENCE_CHECKED_DATE)).toHaveLength(8);
+    expect(EVIDENCE_LIST.filter((src) => src.checkedDate === '2026-11-14')).toHaveLength(13);
+    expect(EVIDENCE_LIST).toHaveLength(21);
     for (const src of EVIDENCE_LIST) {
-      expect(src.checkedDate).toBe(original.includes(src.sourceId) ? EVIDENCE_CHECKED_DATE : '2026-11-14');
+      expect([EVIDENCE_CHECKED_DATE, '2026-11-14']).toContain(src.checkedDate);
       expect(src.cachedAvailable).toBe(true);
       expect(src.summaryText.length).toBeGreaterThan(20);
       expect(src.limitations.length).toBeGreaterThan(15);
@@ -373,6 +434,49 @@ describe('Controlled guidance, evidence registry, and Help registry', () => {
     expect(
       ACTION_CONTENT_REGISTRY['action-clinical-procedure-slot']?.enabled,
     ).toBe(false);
+  });
+
+  it('bundles the five mission research links and resolves every research card', () => {
+    const expected = {
+      'nasa-hrp-hazards': 'https://www.nasa.gov/hrp/hazards/',
+      'nasa-hrp-risks': 'https://www.nasa.gov/hrp/risks/',
+      'nasa-ongoing-hrp-research': 'https://www.nasa.gov/hrp/ongoing-hrp-research/',
+      'csa-radiation-monitoring': 'https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp',
+      'csa-iss-experiments': 'https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp',
+    };
+    expect(MISSION_RESEARCH_SOURCE_IDS).toEqual(Object.keys(expected));
+    for (const [id, url] of Object.entries(expected)) {
+      expect(EVIDENCE_REGISTRY[id]).toMatchObject({ sourceId: id, url, cachedAvailable: true, summaryVersion: 'Version 1' });
+    }
+    expect(EVIDENCE_REGISTRY['nasa-human-research-roadmap']?.url).toBe('https://humanresearchroadmap.nasa.gov/risks/');
+    for (const context of [...Object.values(BODY_SYSTEM_RESEARCH), ...Object.values(MEASUREMENT_RESEARCH), RADIATION_RESEARCH]) {
+      expect(EVIDENCE_REGISTRY[context.sourceId]?.cachedAvailable).toBe(true);
+      expect(context.text).toBeTruthy();
+    }
+    expect(Object.keys(MEASUREMENT_RESEARCH)).toHaveLength(6);
+  });
+
+  it('preserves synthetic sleep and BP comparisons and default report scope with research cards enabled', () => {
+    const bp = SIM_01_OBSERVATIONS.find((row) => row.metricId === 'blood_pressure')!;
+    const sleep = SIM_01_SLEEP_OBSERVATIONS[6]!;
+    const sleepReference = SIM_01_REFERENCES.find((row) => row.metricId === 'sleep')!;
+    expect(compareObservationToReference(sleep, sleepReference).comparisonAvailable).toBe(true);
+    expect(compareObservationToReference(bp, null).comparisonAvailable).toBe(false);
+
+    const report = buildReportBundle({
+      profile: SIM_01_PROFILE,
+      observations: SIM_01_OBSERVATIONS,
+      references: SIM_01_REFERENCES,
+      startDay: 1,
+      endDay: 42,
+      generatedAtUtc: SIM_01_SNAPSHOT_UTC,
+    });
+    expect(report.includedMetricIds).toEqual(['heart_rate', 'blood_pressure', 'body_temperature', 'sleep']);
+    expect(report.includeNotes).toBe(false);
+    expect(report.observations.map((row) => row.observationId)).toEqual(expect.arrayContaining([sleep.observationId, bp.observationId]));
+    expect(report.evidence.map((source) => source.sourceId)).not.toContain(RADIATION_RESEARCH.sourceId);
+    expect(report.evidence.map((source) => source.sourceId)).not.toContain(MEASUREMENT_RESEARCH.sleep.sourceId);
+    expect(report.evidence.map((source) => source.sourceId)).not.toContain(MEASUREMENT_RESEARCH.blood_pressure.sourceId);
   });
 
   it('pins sleep insights to input/reference/rule/source versions and limits review acknowledgement to that exact version', () => {
@@ -385,6 +489,7 @@ describe('Controlled guidance, evidence registry, and Help registry', () => {
     });
 
     if (!insight) throw new Error('Expected a sleep insight');
+    expect(insight.insightId).toBe(`insight-${day42Sleep.observationId}-refv1-crewsignal-sleep-guidance-v1`);
     const reviewed = markInsightReviewed(insight, SIM_01_SNAPSHOT_UTC);
     expect(isInsightReviewCurrent(reviewed, insight)).toBe(true);
 

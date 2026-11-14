@@ -1,11 +1,16 @@
+import { useEffect } from "react";
 import {
   ACTION_CONTENT_LIST,
-  buildSleepInsight,
-  guidanceReviewIdentity,
+  buildMetricInsight,
   EVIDENCE_REGISTRY,
   getLatestObservationsByMetric,
+  guidanceReviewIdentity,
+  METRIC_ACTION_IDS,
+  METRIC_ORDER,
+  type ActionContent,
+  type Insight,
 } from "../shared/src";
-import { desktopBridge, currentActionReview } from "../bridge/desktopBridge";
+import { currentActionReview, desktopBridge } from "../bridge/desktopBridge";
 import { useApp } from "../state/AppContext";
 
 export function ActionsRoute() {
@@ -17,7 +22,13 @@ export function ActionsRoute() {
     refreshSnapshot,
     showToast,
     navigate,
+    selectedActionId,
   } = useApp();
+
+  const actionsLoaded = Boolean(snapshot && activeProfile);
+  useEffect(() => {
+    if (actionsLoaded && selectedActionId) document.getElementById(`action-${selectedActionId}`)?.focus();
+  }, [actionsLoaded, selectedActionId]);
 
   if (!snapshot || !activeProfile) {
     return (
@@ -28,31 +39,34 @@ export function ActionsRoute() {
   }
 
   const latestByMetric = getLatestObservationsByMetric(snapshot.profileData.observations);
-  const latestSleep = latestByMetric.sleep;
-  const sleepRef = activeReferencesByMetric.sleep;
-  const sleepInsight = latestSleep
-    ? buildSleepInsight({
-        observation: latestSleep,
-        reference: sleepRef,
-        createdAtUtc: currentReferenceNowUtc,
-      })
-    : null;
+  const insightsByAction = new Map<string, Insight>();
+  for (const metricId of METRIC_ORDER) {
+    const observation = latestByMetric[metricId];
+    if (!observation) continue;
+    const insight = buildMetricInsight(metricId, {
+      observation,
+      reference: activeReferencesByMetric[metricId],
+      createdAtUtc: currentReferenceNowUtc,
+    });
+    if (insight) insightsByAction.set(METRIC_ACTION_IDS[metricId], insight);
+  }
 
-  const matchingReview = currentActionReview(snapshot.profileData.actionReviews, sleepInsight);
-  const isSleepReviewed = Boolean(matchingReview);
-
-  const handleMarkReviewed = async () => {
-    if (!sleepInsight || !guidanceReviewIdentity(sleepInsight)) return;
+  const handleMarkReviewed = async (action: ActionContent, insight: Insight, sourceVersion: string) => {
+    const reviewId = guidanceReviewIdentity(insight);
+    if (!reviewId) return;
     const nowIso = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
     await desktopBridge.recordActionReview(activeProfile.profileId, {
-      reviewId: guidanceReviewIdentity(sleepInsight)!,
-      profileId: sleepInsight.profileId, referenceId: sleepInsight.referenceId, ruleId: sleepInsight.ruleId,
-      sourceIds: sleepInsight.sourceIds, sourceVersions: sleepInsight.sourceVersions,
-      actionId: "action-review-sleep-routine",
-      observationId: sleepInsight.observationId,
-      referenceVersion: sleepInsight.referenceVersion,
-      ruleVersion: sleepInsight.ruleVersion,
-      sourceVersion: sleepInsight.sourceVersions["nasa-sleep-risk"] ?? "Version 1",
+      reviewId,
+      profileId: insight.profileId,
+      ruleId: insight.ruleId,
+      sourceIds: insight.sourceIds,
+      sourceVersions: insight.sourceVersions,
+      actionId: action.actionId,
+      observationId: insight.observationId,
+      referenceId: insight.referenceId,
+      referenceVersion: insight.referenceVersion,
+      ruleVersion: insight.ruleVersion,
+      sourceVersion,
       reviewedAtUtc: nowIso,
       reviewed: true,
     });
@@ -60,7 +74,7 @@ export function ActionsRoute() {
     showToast({
       tone: "success",
       title: "Action marked reviewed",
-      detail: `Tied to Reference v${sleepInsight.referenceVersion ?? "—"} · ${sleepInsight.ruleVersion}. Observations unchanged.`,
+      detail: `Reference v${insight.referenceVersion} · ${insight.ruleVersion}`,
     });
   };
 
@@ -80,7 +94,9 @@ export function ActionsRoute() {
 
       <div className="stack-md">
         {ACTION_CONTENT_LIST.map((action) => {
-          const isSleepAction = action.actionId === "action-review-sleep-routine";
+          const insight = insightsByAction.get(action.actionId);
+          const sourceVersion = insight?.sourceVersions[action.sourceIds[0] ?? ""] ?? action.sourceVersion;
+          const reviewed = currentActionReview(snapshot.profileData.actionReviews, insight ?? null);
           const relatedEvidence = action.sourceIds
             .map((id) => EVIDENCE_REGISTRY[id])
             .filter((e): e is NonNullable<typeof e> => Boolean(e));
@@ -93,7 +109,7 @@ export function ActionsRoute() {
             >
               <div className="row-wrap" style={{ justifyContent: "space-between" }}>
                 <div>
-                  <h2 id={`action-${action.actionId}`} className="panel-heading">
+                  <h2 id={`action-${action.actionId}`} className="panel-heading" tabIndex={-1}>
                     {action.title}
                   </h2>
                   <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-supporting)" }}>
@@ -101,7 +117,7 @@ export function ActionsRoute() {
                   </p>
                 </div>
                 <div className="row-wrap">
-                  {isSleepAction && isSleepReviewed ? (
+                  {reviewed ? (
                     <span className="badge-success">Reviewed (current version)</span>
                   ) : null}
                   <span className={action.enabled ? "badge-neutral" : "badge-review"}>
@@ -118,12 +134,12 @@ export function ActionsRoute() {
                 </div>
               ) : (
                 <>
-                  {isSleepAction && sleepInsight ? (
+                  {insight ? (
                     <div className="notice-banner" style={{ padding: "12px 14px" }}>
                       <div className="stack-sm">
-                        <strong>Current observation context: {sleepInsight.summary}</strong>
+                        <strong>{insight.summary}</strong>
                         <span style={{ fontSize: 13, color: "var(--text-supporting)" }}>
-                          Reference version: {sleepInsight.referenceVersion ?? "Unavailable"} · Rule: {action.ruleVersion} · Source: {action.sourceVersion}
+                          Reading {insight.observationId} · Reference {insight.referenceId} (v{insight.referenceVersion})
                         </span>
                       </div>
                     </div>
@@ -140,10 +156,11 @@ export function ActionsRoute() {
               )}
 
               <div style={{ fontSize: 13, color: "var(--text-supporting)" }}>
+                <p>{action.applicability}</p>
                 <strong>Scope limitation:</strong> {action.limitation}
               </div>
 
-              {isSleepAction && matchingReview ? <p>Reviewed {matchingReview.reviewedAtUtc}</p> : null}
+              {reviewed && <p>Reviewed {reviewed.reviewedAtUtc}</p>}
               <div className="row-wrap" style={{ justifyContent: "space-between", borderTop: "1px solid var(--border-hairline)", paddingTop: 12 }}>
                 <div className="row-wrap" style={{ fontSize: 12, color: "var(--text-supporting)" }}>
                   <span className="mono-label">
@@ -162,14 +179,14 @@ export function ActionsRoute() {
                   ))}
                 </div>
 
-                {isSleepAction && sleepInsight ? (
+                {insight ? (
                   <button
                     type="button"
-                    className={isSleepReviewed ? "btn-secondary" : "btn-primary"}
-                    disabled={isSleepReviewed}
-                    onClick={() => void handleMarkReviewed()}
+                    className={reviewed ? "btn-secondary" : "btn-primary"}
+                    disabled={Boolean(reviewed)}
+                    onClick={() => void handleMarkReviewed(action, insight, sourceVersion)}
                   >
-                    {isSleepReviewed ? "Reviewed for current version" : "Mark reviewed"}
+                    {reviewed ? "Reviewed for current version" : "Mark reviewed"}
                   </button>
                 ) : null}
               </div>

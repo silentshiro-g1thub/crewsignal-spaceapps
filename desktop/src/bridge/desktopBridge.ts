@@ -1,4 +1,4 @@
-import { guidanceReviewIdentity, isInsightReviewCurrent, type Insight } from '../shared/src';
+import { getMetricAction, guidanceReviewIdentity, isInsightReviewCurrent, type Insight } from '../shared/src';
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
@@ -49,7 +49,7 @@ export interface ProfileRecord {
 
 export function currentActionReview(reviews: ActionReviewRecord[], current: Insight | null): ActionReviewRecord | undefined {
   if (!current) return undefined;
-  return reviews.find(review => review.actionId === 'action-review-sleep-routine' &&
+  return reviews.find(review => review.actionId === getMetricAction(current.metricId).actionId &&
     isInsightReviewCurrent({ ...review, profileId: review.profileId ?? current.profileId,
       status: review.reviewed ? 'reviewed' : 'active' }, current));
 }

@@ -1,5 +1,22 @@
 # CrewSignal Verification & Release Evidence (`EVIDENCE.md`)
 
+## Default report privacy
+
+Working changes based on `348e65b`. The audited `373a265` commit was unavailable in this checkout.
+
+| Verification | Result |
+| --- | --- |
+| Source checks | `node shared/scripts/sync-to-targets.mjs --write all`, `node scripts/verify-clean-source.mjs` and `git diff --check` passed. |
+| Harness | Added a shared legacy-sentinel regression and Android coverage for JSON download, share, CSV and print after SQLite restore. `npm --prefix shared test -- interchange-and-vectors` could not start because Vitest was unavailable. Added Windows frontend JSON and print assertions against a seeded legacy observation. Android and Windows harness execution remain pending. |
+| Installed apps | Offline checks on Android phone, Android tablet and Windows remain pending. |
+## Issue #27 Indicator Guidance
+
+All six indicators have source-linked educational actions on Android, Windows and the website. The shared insight builder requires a compatible reading and personal reference. Mood keeps its ordinal history and offers an educational action without a personalized comparison. Sleep keeps its existing insight ID format, rule version and source versions so stored acknowledgements remain usable.
+
+Local checks against `a907ef9` passed TypeScript checks for all four packages, 85 shared tests, 54 Android harness tests, 34 Windows frontend tests and 15 website tests. Shared tests cover all six actions, the five reference-capable indicators, and missing, mismatched and flagged readings. The clean-source check confirmed all 42 shared files matched across the three targets. Installed Android and Windows checks remain open.
+
+The website production build and four focused Playwright tests passed in headless Edge. They exercised Overview and Explorer links, keyboard focus on the action heading, reviewing a comparable pulse reading, source access without a comparison, and the existing sleep review journey.
+
 ## Issue #23 Continuous Integration
 
 [GitHub Actions CI](../../actions/workflows/ci.yml) records shared, parity, mobile, desktop, and website job results for every pull request and push to `main`. The desktop job runs locked Rust tests on `windows-latest`.
@@ -34,6 +51,12 @@ On November 14, 2026, the working changes based on `996afdf` passed TypeScript c
 Two headless Edge tests verified that a reversed blood-pressure pair can be edited from Review or saved unchanged with a confirmation marker. All 52 Android harness tests passed, and the Android JavaScript bundle exported with `--no-bytecode`. Installed-device verification was outside this run.
 
 ## Issue #6 Reading Status Verification
+
+### Issue #31 Overview accessibility follow-up
+
+Windows and website Overview reading cards expose the metric name and recorded value as their accessible name and the badge text as their accessible description. Unlogged cards expose the metric name and the “Not logged” description. The shared reading-status tests passed, including both theme palettes, distinct icons and mood handling. Windows passed TypeScript and 37 frontend tests. The website production build and two focused headless Edge tests passed, covering accessible descriptions, contrast in both themes, forced colours, the Help legend and responsive Overview layout. Clean-source verification matched 42 shared files per target. Installed screen-reader verification remains open.
+
+### Earlier cross-platform verification
 
 On November 14, 2026, the working changes based on `bc13d33` passed TypeScript checks and 128 tests across shared, website, desktop, and Android harness suites on Windows with Node `24.22.1`. The website and desktop frontend builds passed. Clean-source verification confirmed all 39 shared files matched across each of the three targets.
 
@@ -617,6 +640,32 @@ Implementation checkout `8b67a8cc959c16aa261addcd53ba8e8232147875`. The audited 
 
 To close S05/G04 for this entry path, run the harnesses and repeat the normal check-in on each installed target. Flag `350` bpm, switch profiles, close the app and reopen offline. Confirm Review retains the flag in its original profile. Save and confirm one flagged row in History, JSON, CSV and the printable report. Use `350oops` as the malformed control. Verify a flagged sleep period is absent from fallback reference samples and personalized actions, then log an independent compatible reading and confirm comparison is available.
 
+## 11. Scheduled check-in prompts (issue #16)
+
+| Verification | Result |
+| --- | --- |
+| Shared harness | 10 tests passed in the timing and conversions suite. SIM-SCHEDULE shows blood pressure overdue, an enabled schedule with no entries shows a first check-in due, and disabled or fresh schedules are excluded. |
+| Windows UI harness | 6 tests passed in the draft handoff suite. SIM-SCHEDULE shows a navigation count of 1 and the Overview action opens the systolic and diastolic entry form. |
+| Android UI harness | Both focused cases passed. Phone and tablet layouts show a navigation count of 1 and the Overview action opens blood pressure entry using local SQLite fixture data. |
+| Android emulator | Pending installed-app verification. |
+| Installed devices | Pending on Android phone, Android tablet, and Windows. |
+
+Shared, desktop, and mobile type checks passed. The full shared suite had three unrelated failures involving CSV fixture line endings, a font license file byte count, and the expected guidance registry size.
+
+This change covers the in-app prompt milestone. Native notifications and their install permissions remain pending.
+
+## 12. NASA and CSA research context (issue #13)
+
+Tested the working tree based on `4bb2035940f3c2b4a16dc112abd91208cdec7758` with the research-context changes applied.
+
+| Verification | Result |
+| --- | --- |
+| `node shared/scripts/sync-to-targets.mjs --generate-artifacts`, `node shared/scripts/sync-to-targets.mjs --write all`, `node scripts/verify-clean-source.mjs`, `git diff --check` | Passed. All 43 shared files match on each target. |
+| Shared Vitest suite | 75 passed. The existing font manifest check failed because the Windows checkout uses CRLF for the Geist Mono license, whose manifest expects LF bytes. The focused guidance suite passed all 20 tests, including five exact agency URLs, source IDs, all six indicators, the SIM-01 sleep and BP comparison walkthrough, report defaults and report evidence scope. |
+| Desktop and mobile harnesses | Desktop Vitest passed 35 tests. The updated Explorer suite passed 9 tests, including cached card navigation and simulated browser failure. The full mobile Jest run passed 25 UI tests. The focused rerun with expanded browser-failure assertions passed and verified feedback and copying the exact CSA URL. |
+| Website | Type check passed. Vitest passed 12 tests and failed 3 in the check-in, restore and raise-reading workflows. |
+| Rust tests | Pending. Cargo was unavailable on this checkout. |
+| Installed Windows app, Android phone and Android tablet | Pending. Verify cached summaries in airplane mode from Explorer and measurement Help, the five deliberate browser opens, and browser failure feedback with URL copy on each target. |
 ## 9. Native tester downloads (upstream issue #15)
 
 Verification on November 14, 2026 used the working changes based on `4bb2035940f3c2b4a16dc112abd91208cdec7758`. The fork and upstream returned no published release assets through the public GitHub API.
@@ -842,3 +891,19 @@ deployment, or signed-out judging links. Native dependency and device limitation
 recorded in the preceding split entry still apply. Browser results are harness
 evidence only. No GitHub writes, merges, or deployment changes are performed by
 the resolver. Review and commit the native merge and site changes separately.
+
+## PR #36 merge-conflict repair — 2026-11-14
+
+Merged main at fcac5d0 into the website-split branch. Kept the website removal, including the research-context file introduced on main, while retaining main's shared, desktop, and mobile updates. Resolved the evidence inventory test against all 21 current sources and retained the per-source checked-date assertion.
+
+Validation on Windows with Node 26.12.1:
+- Root typecheck: shared, desktop, and mobile passed.
+- Shared: 9 suites, 116 tests passed.
+- Desktop: 10 suites, 42 tests passed.
+- Mobile: 8 suites, 63 tests passed.
+- Desktop production build passed (existing chunk-size warning).
+- Pinned site-export regression test passed.
+- Clean-source verification passed; both native targets match all 44 canonical shared files.
+- Git whitespace checks passed.
+
+The existing checkout initially retained CRLF fixture bytes from before the branch's LF attributes; normalizing the local shared files to the committed LF format resolved the fixture comparison failure. No fixture content changes were needed. Rust tests were not run because this machine has no Rust toolchain; CI must verify native Rust. No deployment or device validation was performed.

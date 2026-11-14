@@ -34,6 +34,15 @@ describe("CrewSignal Desktop Canonical Vectors & UI Flows", () => {
     resetMockStore();
   });
 
+  it("associates all six Overview readings with their visible status", async () => {
+    render(<App />);
+    const pulse = await screen.findByRole("group", { name: /Heart rate.*72.*bpm/i });
+    expect(pulse).toHaveAccessibleDescription("Differs from reference");
+    expect(screen.getByRole("group", { name: /^Mood\b/ })).toHaveAccessibleDescription("No reference");
+    expect(screen.getByRole("group", { name: "Blood glucose" })).toHaveAccessibleDescription("Not logged");
+    expect(document.querySelectorAll(".reading-cell[aria-describedby] .reading-status")).toHaveLength(6);
+  });
+
   it("opens Getting started from Demo Overview and returns to a draft in Review", async () => {
     render(<App />);
     fireEvent.click(await screen.findByRole("button", { name: "Getting started" }));
@@ -235,8 +244,8 @@ describe("CrewSignal Desktop Canonical Vectors & UI Flows", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Load SIM-SCHEDULE fixture" }));
     fireEvent.click(screen.getAllByRole("button", { name: /^Overview$/ })[0]!);
     await screen.findByRole("heading", { name: "Due now" });
-    expect(screen.getByRole("button", { name: "Check-in, 1 due" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Log blood pressure" }));
+    expect(screen.getAllByRole("button", { name: "Check-in, 1 due" })).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Start blood pressure check-in" }));
     expect(await screen.findByLabelText("Systolic (mmHg)")).toBeInTheDocument();
   });
 

@@ -1,12 +1,11 @@
-import { currentActionReview } from '../bridge/desktopBridge';
 import {
   buildRaiseReadingPrompt,
   buildSleepInsight,
+  getMetricAction,
   compareObservationToReference,
   computeMissionDay,
   describeMissionContact,
   evaluateMetricSchedule,
-  getDueCheckIns,
   formatObservationDisplay,
   NEEDS_RECHECK_LABEL,
   formatUtcTimeHHMM,
@@ -20,6 +19,7 @@ import {
   RAISE_READING_SUGGESTION,
   type MetricId,
 } from "../shared/src";
+import { currentActionReview } from "../bridge/desktopBridge";
 import { useApp } from "../state/AppContext";
 import { TrendChart } from "../components/TrendChart";
 import { ReadingStatusBadge } from "../components/ReadingStatusBadge";
@@ -36,6 +36,7 @@ export function OverviewRoute() {
     preferences,
     activeDraft,
     currentReferenceNowUtc,
+    dueSchedules,
     activeReferencesByMetric,
     trendRangeDays,
     setTrendRangeDays,
@@ -44,6 +45,7 @@ export function OverviewRoute() {
     gettingStarted,
     setSelectedTrendMetric,
     openDraftForMetric,
+    openAction,
   } = useApp();
 
   if (storageStatus && !storageStatus.available) {
@@ -131,7 +133,6 @@ export function OverviewRoute() {
   }
 
   const observations = snapshot.profileData.observations;
-  const dueCheckIns = getDueCheckIns(activeProfile, observations, currentReferenceNowUtc);
   const raisePrompt = buildRaiseReadingPrompt({
     profileId: activeProfile.profileId,
     observations,
@@ -200,15 +201,15 @@ export function OverviewRoute() {
         </div>
       </div>
 
-      {dueCheckIns.length > 0 && (
+      {dueSchedules.length > 0 && (
         <section className="panel-card stack-sm" aria-labelledby="due-now-heading">
           <h2 id="due-now-heading" className="panel-heading">Due now</h2>
-          {dueCheckIns.map(({ metricId, status }) => (
+          {dueSchedules.map(({ metricId, status }) => (
             <div className="row-wrap" key={metricId}>
               <span>{METRIC_DEFINITIONS[metricId].name}</span>
               <span>{status === "due_no_entries" ? "First check-in due" : "Check-in due"}</span>
               <button type="button" className="btn-secondary" onClick={() => void openDraftForMetric(metricId)}>
-                Log {METRIC_DEFINITIONS[metricId].shortLabel.toLowerCase()}
+                Start {METRIC_DEFINITIONS[metricId].name.toLowerCase()} check-in
               </button>
             </div>
           ))}
@@ -306,7 +307,7 @@ export function OverviewRoute() {
                   {sleepInsight.referenceVersion ?? "—"} · Rule {sleepInsight.ruleVersion}
                 </span>
               </div>
-              <button type="button" className="btn-primary" onClick={() => navigate("actions")}>
+              <button type="button" className="btn-primary" onClick={() => openAction(getMetricAction('sleep').actionId)}>
                 Review sleep →
               </button>
             </section>
@@ -334,6 +335,7 @@ export function OverviewRoute() {
             <div className="readings-rail">
               {METRIC_ORDER.map((metricId) => {
                 const def = METRIC_DEFINITIONS[metricId];
+                const action = getMetricAction(metricId);
                 const obs = latestByMetric[metricId];
                 const schedule = activeProfile.schedules[metricId];
                 const schedStatus = evaluateMetricSchedule({
@@ -345,6 +347,7 @@ export function OverviewRoute() {
                 const comparison = obs ? compareObservationToReference(obs, activeReferencesByMetric[metricId]) : null;
                 const status = getReadingStatus(obs, comparison, schedStatus);
                 const statusId = `reading-status-${metricId}`;
+                const valueId = `${statusId}-value`;
 
                 const display = obs
                   ? formatObservationDisplay(obs, preferences.displayUnits)
@@ -358,9 +361,15 @@ export function OverviewRoute() {
                       : null;
 
                 return (
-                  <div key={metricId} className="reading-cell">
+                  <div
+                    key={metricId}
+                    className="reading-cell"
+                    role="group"
+                    aria-labelledby={display ? `${statusId}-name ${statusId}-value` : `${statusId}-name`}
+                    aria-describedby={statusId}
+                  >
                     <div className="row-wrap" style={{ justifyContent: "space-between", gap: 4 }}>
-                      <span className="mono-label">{def.shortLabel}</span>
+                      <span id={`${statusId}-name`} className="mono-label">{def.shortLabel}</span>
                       {schedStatus.status === "past_interval" ? (
                         <span className="badge-review" title="Optional scheduled check-in interval elapsed">
                           Past interval
@@ -374,8 +383,8 @@ export function OverviewRoute() {
 
                     {obs && display ? (
                       <>
-                        <div className="reading-value tabular-value">
-                          {display.valueOnlyText}
+                        <div id={valueId} className="reading-value tabular-value">
+                          {display.valueOnlyText}{" "}
                           <span className="reading-unit">{display.unitLabel}</span>
                         </div>
                         <ReadingStatusBadge status={status} id={statusId} />
@@ -397,7 +406,8 @@ export function OverviewRoute() {
                           type="button"
                           className="btn-link"
                           style={{ marginTop: 4, fontSize: 12 }}
-                          aria-describedby={statusId}
+                          aria-label={`Trend & history for ${def.shortLabel}`}
+                          aria-describedby={`${valueId} ${statusId}`}
                           onClick={() => openMetricTrend(metricId)}
                         >
                           Trend & history
@@ -423,6 +433,9 @@ export function OverviewRoute() {
                         </button>
                       </>
                     )}
+                    <button type="button" className="btn-link" onClick={() => openAction(action.actionId)}>
+                      {action.title}
+                    </button>
                   </div>
                 );
               })}
@@ -526,7 +539,7 @@ export function OverviewRoute() {
                   <div>
                     <div className="action-row-title">Offline source summaries</div>
                     <div className="action-row-desc">
-                      NASA, CDC & NIST unit references cached locally
+                      Research and unit references cached locally
                     </div>
                   </div>
                   <span className="action-row-trailing">View →</span>

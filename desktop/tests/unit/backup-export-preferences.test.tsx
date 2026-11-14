@@ -7,7 +7,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { validateBackupImport } from "../../src/shared/src";
+import { SIM_01_SNAPSHOT_UTC, validateBackupImport } from "../../src/shared/src";
 import { browserMockBackend, buildDemoSeedInput } from "../../src/bridge/desktopBridge";
 import { normalizeAppPreferences } from "../../src/state/preferences";
 import { App } from "../../src/App";
@@ -55,6 +55,28 @@ describe("PR #1 re-review P1: Windows full backup export preferences", () => {
     cleanup();
     vi.restoreAllMocks();
     window.__CREWSIGNAL_MOCK_FILES__ = undefined;
+  });
+
+  it("redacts report JSON and print through the Windows frontend", async () => {
+    const seed = buildDemoSeedInput(false);
+    const row = { ...seed.observations.find((obs) => obs.metricId === 'blood_pressure')! };
+    row.note = 'READING_SENTINEL';
+    row.qualityNote = 'QUALITY_SENTINEL';
+    row.correctionHistory = [{ correctionId: 'legacy-correction', correctedAtUtc: SIM_01_SNAPSHOT_UTC,
+      reason: 'CORRECTION_SENTINEL', previousEntered: row.entered, previousCanonical: row.canonical,
+      previousTiming: row.timing, previousMethod: row.method, previousContext: row.context }];
+    seed.observations = seed.observations.map((obs) => obs.observationId === row.observationId ? row : obs);
+    browserMockBackend.resetDemo(seed);
+    const save = vi.spyOn(browserMockBackend, 'saveExportFile');
+    const { container } = render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Reports' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Export Report JSON' }));
+    const json = save.mock.calls[0]![1];
+    const print = container.querySelector('.print-report-sheet')!.textContent;
+    expect(JSON.parse(json).observations.some((obs: { metricId: string }) => obs.metricId === 'blood_pressure')).toBe(true);
+    expect(json).not.toContain('SENTINEL');
+    expect(print).toContain('Blood pressure');
+    expect(print).not.toContain('SENTINEL');
   });
 
   it("normalizes legacy native preferences into the shared shape", () => {

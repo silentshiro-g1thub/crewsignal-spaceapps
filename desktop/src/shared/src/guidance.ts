@@ -10,8 +10,9 @@ import {
   type PersonalReference,
 } from './contracts';
 import { compareObservationToReference, isObservationQualityEligible } from './references';
-import { formatDurationHoursMinutes, getObservationSortTimestampMs, getObservedMissionDay } from './timing';
-import { roundToDecimals } from './conversions';
+import { getObservationSortTimestampMs, getObservedMissionDay } from './timing';
+import { METRIC_DEFINITIONS } from './metrics';
+import { formatObservationDisplay, roundToDecimals } from './conversions';
 
 export const RULE_VERSION_RAISE_READING = 'crewsignal-raise-reading-v1' as const;
 export const RAISE_READING_SUGGESTION = 'Consider sharing a scoped report with your crew medical officer or flight surgeon.';
@@ -141,10 +142,18 @@ export function buildRaiseReadingPrompt(params: {
 
 export const EVIDENCE_CHECKED_DATE = '2026-11-13' as const;
 
+export const METRIC_ACTION_IDS = {
+  heart_rate: 'action-review-pulse',
+  blood_pressure: 'action-review-blood-pressure',
+  blood_glucose: 'action-review-glucose',
+  body_temperature: 'action-review-temperature',
+  sleep: 'action-review-sleep-routine',
+  mood: 'action-review-mood-context',
+} as const satisfies Record<MetricId, string>;
+
 /**
- * Canonical offline-cached evidence registry checked 2026-11-13.
- * Concise attributed summaries are bundled locally without full article scraping
- * or claims of NASA endorsement.
+ * Canonical offline evidence registry. Each record carries its verification date.
+ * The app bundles original attributed summaries and links to the publishers.
  */
 export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
   'nasa-sleep-risk': {
@@ -232,6 +241,78 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
     knownUpdateAvailableVersion: null,
     knownUpdateCheckedDate: null,
     relatedMetricIds: ['heart_rate', 'blood_pressure', 'sleep', 'mood'],
+    relatedActionIds: [],
+  },
+  'nasa-hrp-risks': {
+    sourceId: "nasa-hrp-risks",
+    title: "Risks of Human Spaceflight",
+    shortTitle: "NASA HRP risks",
+    publisher: "NASA Human Research Program",
+    url: "https://www.nasa.gov/hrp/risks/",
+    checkedDate: "2026-11-14",
+    sourceUpdatedDate: null,
+    summaryVersion: "Version 1",
+    summaryText: "NASA groups the risks it studies by the ways spaceflight can affect crew health and performance, including changes to the cardiovascular, immune and musculoskeletal systems.",
+    limitations: "The overview describes risks across missions. It cannot determine a crew member's risk from a check-in.",
+    cachedAvailable: true,
+    offlineAccessNote: "Available offline: summary",
+    knownUpdateAvailableVersion: null,
+    knownUpdateCheckedDate: null,
+    relatedMetricIds: [],
+    relatedActionIds: [],
+  },
+  'nasa-ongoing-hrp-research': {
+    sourceId: "nasa-ongoing-hrp-research",
+    title: "Ongoing HRP Research",
+    shortTitle: "NASA HRP research",
+    publisher: "NASA Human Research Program",
+    url: "https://www.nasa.gov/hrp/ongoing-hrp-research/",
+    checkedDate: "2026-11-14",
+    sourceUpdatedDate: null,
+    summaryVersion: "Version 1",
+    summaryText: "NASA lists studies that collect crew health and performance data. ARCHeR combines wearable activity and sleep data with crew feedback to study sleep in flight.",
+    limitations: "Study methods and equipment differ from self-reported sleep and mood check-ins.",
+    cachedAvailable: true,
+    offlineAccessNote: "Available offline: summary",
+    knownUpdateAvailableVersion: null,
+    knownUpdateCheckedDate: null,
+    relatedMetricIds: [],
+    relatedActionIds: [],
+  },
+  'csa-radiation-monitoring': {
+    sourceId: "csa-radiation-monitoring",
+    title: "Monitoring radiation for astronaut health",
+    shortTitle: "CSA radiation monitoring",
+    publisher: "Canadian Space Agency",
+    url: "https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp",
+    checkedDate: "2026-11-14",
+    sourceUpdatedDate: "2026-02-26",
+    summaryVersion: "Version 1",
+    summaryText: "The Canadian Active Neutron Spectrometer (CANS) is a dedicated instrument designed to measure neutron radiation exposure in space.",
+    limitations: "The instrument measures the neutron component of radiation. CrewSignal has no radiation measurement or exposure estimate.",
+    cachedAvailable: true,
+    offlineAccessNote: "Available offline: summary",
+    knownUpdateAvailableVersion: null,
+    knownUpdateCheckedDate: null,
+    relatedMetricIds: [],
+    relatedActionIds: [],
+  },
+  'csa-iss-experiments': {
+    sourceId: "csa-iss-experiments",
+    title: "Why do we conduct science experiments in space?",
+    shortTitle: "CSA space experiments",
+    publisher: "Canadian Space Agency",
+    url: "https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp",
+    checkedDate: "2026-11-14",
+    sourceUpdatedDate: null,
+    summaryVersion: "Version 1",
+    summaryText: "Researchers use the International Space Station to study health changes in weightlessness and prepare for longer missions, with some findings also informing research on Earth.",
+    limitations: "The explainer describes research goals. It provides no interpretation thresholds for individual check-ins.",
+    cachedAvailable: true,
+    offlineAccessNote: "Available offline: summary",
+    knownUpdateAvailableVersion: null,
+    knownUpdateCheckedDate: null,
+    relatedMetricIds: [],
     relatedActionIds: [],
   },
   'nasa-human-research-roadmap': {
@@ -332,7 +413,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
     relatedMetricIds: [
       "heart_rate"
     ],
-    relatedActionIds: []
+    relatedActionIds: [METRIC_ACTION_IDS.heart_rate]
   },
   "aha-blood-pressure": {
     sourceId: "aha-blood-pressure",
@@ -352,7 +433,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
     relatedMetricIds: [
       "blood_pressure"
     ],
-    relatedActionIds: []
+    relatedActionIds: [METRIC_ACTION_IDS.blood_pressure]
   },
   "nasa-standing-risk": {
     sourceId: "nasa-standing-risk",
@@ -393,7 +474,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
     relatedMetricIds: [
       "blood_glucose"
     ],
-    relatedActionIds: []
+    relatedActionIds: [METRIC_ACTION_IDS.blood_glucose]
   },
   "nasa-human-adaptation": {
     sourceId: "nasa-human-adaptation",
@@ -433,7 +514,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
     relatedMetricIds: [
       "body_temperature"
     ],
-    relatedActionIds: []
+    relatedActionIds: [METRIC_ACTION_IDS.body_temperature]
   },
   "nasa-body-temperature": {
     sourceId: "nasa-body-temperature",
@@ -493,11 +574,40 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
     relatedMetricIds: [
       "mood"
     ],
-    relatedActionIds: []
+    relatedActionIds: [METRIC_ACTION_IDS.mood]
   },
 };
 
 export const EVIDENCE_LIST: readonly EvidenceReference[] = Object.values(EVIDENCE_REGISTRY);
+
+function measurementAction(
+  metricId: Exclude<MetricId, 'sleep'>,
+  title: string,
+  applicability: string,
+  steps: string[],
+  sourceId: string,
+): ActionContent {
+  const actionId = METRIC_ACTION_IDS[metricId];
+  return {
+    actionId,
+    title,
+    category: 'educational',
+    badgeLabel: 'Educational · Prototype',
+    enabled: true,
+    disabledReason: null,
+    applicability,
+    limitation: 'For reviewing your log. This step cannot diagnose a condition or determine treatment.',
+    triggerSummary: metricId === 'mood'
+      ? 'Review context alongside your mood history.'
+      : 'Use this step to review how you logged the reading. A personalized comparison requires a compatible reference.',
+    steps,
+    sourceIds: [sourceId],
+    sourceVersion: 'Version 1',
+    ruleId: `rule-${metricId.replaceAll('_', '-')}-context`,
+    ruleVersion: `crewsignal-${metricId.replaceAll('_', '-')}-guidance-v1`,
+    reviewStatus: 'reviewed_educational',
+  };
+}
 
 export const ACTION_CONTENT_REGISTRY: Record<string, ActionContent> = {
   'action-review-sleep-routine': {
@@ -510,7 +620,7 @@ export const ACTION_CONTENT_REGISTRY: Record<string, ActionContent> = {
     applicability: 'Use your approved mission procedures for individual decisions.',
     limitation:
       'This comparison describes your entry; it does not assess fitness for duty or prescribe hours, medications, caffeine, lighting doses, or schedule changes.',
-    triggerSummary: 'Triggered when a compatible Main sleep entry differs from your personal sleep reference.',
+    triggerSummary: 'Compare a Main sleep entry with your personal sleep reference when the method and context match.',
     steps: [
       'Check the recorded sleep period and whether any sleep window included awake time.',
       'Review your approved rest schedule for recent shift changes or irregular timing.',
@@ -522,6 +632,36 @@ export const ACTION_CONTENT_REGISTRY: Record<string, ActionContent> = {
     ruleVersion: RULE_VERSION_SLEEP_ACTION,
     reviewStatus: 'reviewed_educational',
   },
+  [METRIC_ACTION_IDS.heart_rate]: measurementAction(
+    'heart_rate', 'Review pulse measurement',
+    'Activity and the way you count your pulse can affect how comparable readings are.',
+    ['If you repeat the reading, rest first and use the same counting method. Note recent activity in the log.'],
+    'nlm-pulse',
+  ),
+  [METRIC_ACTION_IDS.blood_pressure]: measurementAction(
+    'blood_pressure', 'Review cuff setup',
+    'Cuff placement, arm support and posture affect the measurement context.',
+    ['Check the cuff placement and arm support. Record the posture and keep both numbers together.'],
+    'aha-blood-pressure',
+  ),
+  [METRIC_ACTION_IDS.blood_glucose]: measurementAction(
+    'blood_glucose', 'Review glucose measurement context',
+    'Meter technique and meal timing help you compare entries taken under similar conditions.',
+    ['Check the meter and test-strip instructions. Note when you last ate and keep the original unit in the log.'],
+    'fda-glucose-meter',
+  ),
+  [METRIC_ACTION_IDS.body_temperature]: measurementAction(
+    'body_temperature', 'Review temperature measurement site',
+    'Readings taken at different sites can differ.',
+    ['Record the thermometer type and measurement site. Use the same site and method if you repeat the reading.'],
+    'nlm-temperature',
+  ),
+  [METRIC_ACTION_IDS.mood]: measurementAction(
+    'mood', 'Review mood context',
+    'A note about recent sleep or workload can help you remember the context of a self-report.',
+    ['Review your mood history and note relevant sleep or workload changes alongside the entry.'],
+    'nasa-behavioral-measures',
+  ),
   'action-check-measurement-context': {
     actionId: 'action-check-measurement-context',
     title: 'Check measurement context',
@@ -570,6 +710,10 @@ export const ACTION_CONTENT_REGISTRY: Record<string, ActionContent> = {
 export const ACTION_CONTENT_LIST: readonly ActionContent[] = Object.values(
   ACTION_CONTENT_REGISTRY,
 );
+
+export function getMetricAction(metricId: MetricId): ActionContent {
+  return ACTION_CONTENT_REGISTRY[METRIC_ACTION_IDS[metricId]]!;
+}
 
 export const DEFAULT_UNCONFIGURED_HELP: HelpProcedureCard = {
   mode: 'unconfigured',
@@ -626,53 +770,37 @@ export function describeMissionContact(helpMode: AppPreferences['helpMode']): st
 }
 
 /**
- * Evaluates a sleep Observation against a PersonalReference into a version-pinned Insight.
- * Acknowledging (markInsightReviewed) applies strictly to the exact
- * (observationId, referenceVersion, ruleVersion, sourceVersion) tuple.
+ * Builds version-pinned guidance when the reading has a compatible reference.
  */
-export function buildSleepInsight(params: {
+export function buildMetricInsight(metricId: MetricId, params: {
   observation: Observation;
   reference: PersonalReference | null;
   createdAtUtc: string;
-  reviewedObservationIds?: ReadonlySet<string>;
 }): Insight | null {
   const { observation, reference, createdAtUtc } = params;
-  if (!isObservationQualityEligible(observation)) return null;
+  if (observation.metricId !== metricId || !reference || reference.metricId !== metricId ||
+      reference.profileId !== observation.profileId) return null;
   const cmp = compareObservationToReference(observation, reference);
-  const action = ACTION_CONTENT_REGISTRY['action-review-sleep-routine']!;
+  if (!cmp.comparisonAvailable) return null;
+  const action = getMetricAction(metricId);
 
   const sourceVersions: Record<string, string> = {};
   for (const sid of action.sourceIds) {
-    sourceVersions[sid] = EVIDENCE_REGISTRY[sid]?.summaryVersion ?? '';
+    const version = EVIDENCE_REGISTRY[sid]?.summaryVersion;
+    if (!version?.trim()) return null;
+    sourceVersions[sid] = version;
   }
 
-  const sleepMins =
-    observation.canonical.kind === 'sleep_duration'
-      ? observation.canonical.durationMinutes
-      : 0;
-  const durationText =
-    observation.canonical.kind === 'sleep_duration' && observation.canonical.reportedNoSleep
-      ? '0h 0m'
-      : formatDurationHoursMinutes(sleepMins, { padMinutes: true });
-  const endingDay = getObservedMissionDay(observation);
-
-  let summary: string;
-  if (!cmp.comparisonAvailable) {
-    summary = `Day ${endingDay} sleep ${durationText} · ${cmp.unavailableReason ?? 'Comparison unavailable'}`;
-  } else if (cmp.deltaNumeric !== null && cmp.deltaNumeric < 0) {
-    summary = `Sleep ${durationText} · ${cmp.differenceText}`;
-  } else if (cmp.deltaNumeric !== null && cmp.deltaNumeric > 0) {
-    summary = `Sleep ${durationText} · ${cmp.differenceText}`;
-  } else {
-    summary = `Sleep ${durationText} · Matches personal reference`;
-  }
-
-  const isReviewed = false; // A bare observation ID never proves a version-pinned review.
+  const display = formatObservationDisplay(observation, { blood_glucose: 'mg/dL', body_temperature: 'C' });
+  const reading = metricId === 'sleep' ? display.valueOnlyText : display.enteredText;
+  const difference = metricId === 'sleep' && cmp.deltaNumeric === 0
+    ? 'Matches personal reference'
+    : cmp.differenceText;
 
   return {
     insightId: `insight-${observation.observationId}-refv${cmp.referenceVersion ?? 0}-${action.ruleVersion}`,
     profileId: observation.profileId,
-    metricId: 'sleep',
+    metricId,
     observationId: observation.observationId,
     referenceId: cmp.referenceId,
     referenceVersion: cmp.referenceVersion,
@@ -682,14 +810,18 @@ export function buildSleepInsight(params: {
     sourceVersions,
     comparisonAvailable: cmp.comparisonAvailable,
     unavailableReason: cmp.unavailableReason,
-    summary,
+    summary: `${METRIC_DEFINITIONS[metricId].name} ${reading} · ${difference}`,
     differenceText: cmp.differenceText,
     deltaNumeric: cmp.deltaNumeric,
     deltaUnit: cmp.deltaUnit,
-    status: isReviewed ? 'reviewed' : 'active',
-    reviewedAtUtc: isReviewed ? createdAtUtc : null,
+    status: 'active',
+    reviewedAtUtc: null,
     createdAtUtc,
   };
+}
+
+export function buildSleepInsight(params: Parameters<typeof buildMetricInsight>[1]): Insight | null {
+  return buildMetricInsight('sleep', params);
 }
 
 /**

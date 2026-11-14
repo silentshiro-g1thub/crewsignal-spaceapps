@@ -5,7 +5,9 @@ import * as ReactNative from 'react-native';
 import { Keyboard } from 'react-native';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import App from '../src/App';
+import { EXAMPLE_BACKUP_BUNDLE, SIM_01_SNAPSHOT_UTC } from '../src/shared/src';
 import { Directory } from 'expo-file-system';
+import { SIM_SCHEDULE_PROFILE } from '../src/shared/src';
 import { defaultPlatformIo, type PlatformIoAdapter } from '../src/platform/files';
 import { NodeSqliteDriver } from '../src/storage/nodeDriver';
 import { CrewSignalSqliteStore } from '../src/storage/sqliteStore';
@@ -120,14 +122,19 @@ describe('CrewSignal Mobile UI, responsiveness, accessibility & recovery workflo
   async function renderTestApp(options?: {
     simulateLoadFailure?: boolean;
     io?: PlatformIoAdapter;
+    profileId?: string;
   }) {
     const driver = new NodeSqliteDriver(':memory:');
     const store = new CrewSignalSqliteStore(driver);
     cleanups.push(() => driver.close());
+    if (options?.profileId) {
+      await store.initialize();
+      await store.updatePreferences({ activeProfileId: options.profileId });
+    }
     // Tests that pass the production adapter do not read the mock's file lists.
     const io = (options?.io ?? createMockIo()) as ReturnType<typeof createMockIo>;
 
-    await render(
+    const rendered = await render(
       <App
         store={store}
         io={io}
@@ -137,8 +144,56 @@ describe('CrewSignal Mobile UI, responsiveness, accessibility & recovery workflo
       />,
     );
 
-    return { driver, store, io };
+    return { driver, store, io, unmount: rendered.unmount };
   }
+
+  test.each([
+    [390, 844, 'tab-checkin'],
+    [1000, 800, 'rail-checkin'],
+  ] as const)('shows the due count and opens the scheduled metric at %ipx', async (width, height, navId) => {
+    setViewport(width, height);
+    await renderTestApp({ profileId: SIM_SCHEDULE_PROFILE.profileId });
+
+    expect(await screen.findByText('Due now')).toBeTruthy();
+    expect(screen.getByTestId(navId).props.accessibilityLabel).toBe('Check-in, 1 due');
+    await fireEvent.press(screen.getByRole('button', { name: 'Start blood pressure check-in' }));
+    expect(await screen.findByLabelText(/Systolic pressure/i)).toBeTruthy();
+  });
+
+  test('default report redacts restored notes in Android JSON, share, CSV and print', async () => {
+    const { store, io, unmount } = await renderTestApp();
+    await screen.findByTestId('overview-checkin-card');
+    const row = EXAMPLE_BACKUP_BUNDLE.observations.find((obs) => obs.metricId === 'blood_pressure')!;
+    const legacy = {
+      ...row, note: 'READING_SENTINEL', qualityNote: 'QUALITY_SENTINEL',
+      correctionHistory: [{
+        correctionId: 'old-correction', correctedAtUtc: SIM_01_SNAPSHOT_UTC,
+        reason: 'CORRECTION_SENTINEL', previousEntered: row.entered, previousCanonical: row.canonical,
+        previousTiming: row.timing, previousMethod: row.method, previousContext: row.context,
+      }],
+    };
+    const restored = await store.restoreBackupBundle({
+      rawBackup: { ...EXAMPLE_BACKUP_BUNDLE, observations: [legacy] },
+      destination: 'replace_existing', targetExistingProfileId: row.profileId, confirmedReplace: true,
+    });
+    expect(restored.ok).toBe(true);
+    await unmount();
+    await render(<App store={store} io={io} clockOverrideUtc={SIM_01_SNAPSHOT_UTC} skipFontLoading />);
+    await fireEvent.press(await screen.findByTestId('tab-more'));
+    await fireEvent.press(await screen.findByTestId('more-nav-reports'));
+    for (const id of ['export-report-json', 'share-report-btn', 'export-report-csv', 'print-a4-btn']) {
+      await fireEvent.press(await screen.findByTestId(id));
+    }
+    const json = io.savedFiles.find((file) => file.mimeType === 'application/json')!.content;
+    const csv = io.savedFiles.find((file) => file.mimeType === 'text/csv')!.content;
+    const print = io.printedHtml[0]!;
+    expect(io.sharedFiles[0]!.content).toBe(json);
+    expect(JSON.parse(json).observations).toHaveLength(1);
+    expect(csv).toContain('blood_pressure');
+    expect(print).toContain('Blood pressure');
+    for (const payload of [json, csv, print]) expect(payload).not.toContain('SENTINEL');
+    expect((await store.loadProfileSnapshot(row.profileId)).observations[0]).toEqual(legacy);
+  });
 
   test('source-only revision reviews the current Actions tuple from a stale provider snapshot in one click', async () => {
     const { store } = await renderTestApp();
@@ -392,6 +447,31 @@ describe('CrewSignal Mobile UI, responsiveness, accessibility & recovery workflo
     await fireEvent.press(await screen.findByTestId('confirm-skip-unavailable'));
     const skipOutcome = await screen.findByTestId('checkin-skip-outcome');
     expect(within(skipOutcome).getByText(/No measurements added in this check-in\./)).toBeTruthy();
+  });
+
+  test('opens cached radiation research before handing the exact URL to the browser', async () => {
+    const openExternalUrl = jest.fn<PlatformIoAdapter['openExternalUrl']>(async () => ({
+      ok: false,
+      message: 'No external browser handler is available for this link. Copy the URL instead.',
+    }));
+    const copyToClipboard = jest.fn<PlatformIoAdapter['copyToClipboard']>(async () => true);
+    const io = createMockIo({ openExternalUrl, copyToClipboard });
+    await renderTestApp({ io });
+    await screen.findByTestId('overview-primary-checkin-cta');
+    await fireEvent.press(screen.getByTestId('tab-explorer'));
+    await fireEvent.press(await screen.findByRole('button', { name: 'CSA radiation monitoring' }));
+
+    const card = await screen.findByTestId('source-card-csa-radiation-monitoring');
+    expect(within(card).getByText('Canadian Space Agency · Version 1')).toBeTruthy();
+    expect(within(card).getByText(/CrewSignal check-ins leave radiation exposure unassessed/)).toBeTruthy();
+    expect(openExternalUrl).not.toHaveBeenCalled();
+    const url = 'https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp';
+    await fireEvent.press(within(card).getByTestId('open-source-csa-radiation-monitoring'));
+    expect(openExternalUrl).toHaveBeenCalledWith(url);
+    const status = await screen.findByTestId('sources-link-status');
+    expect(within(status).getByText(/No external browser handler/)).toBeTruthy();
+    await fireEvent.press(within(card).getByRole('button', { name: 'Copy source URL' }));
+    expect(copyToClipboard).toHaveBeenCalledWith(url);
   });
 
   test('Explorer diagram/list sync, Trends 7/30d & Table, Sources linking, Reports save/share/print/CSV, & Personal blank isolation', async () => {
