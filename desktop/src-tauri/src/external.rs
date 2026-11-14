@@ -1,7 +1,9 @@
 use crate::models::CommandError;
+use url::Url;
 
 const ALLOWED_HTTPS_HOSTS: &[&str] = &[
     "www.nasa.gov",
+    "www.asc-csa.gc.ca",
     "nasa.gov",
     "humanresearchroadmap.nasa.gov",
     "ntrs.nasa.gov",
@@ -22,26 +24,26 @@ const ALLOWED_HTTPS_HOSTS: &[&str] = &[
 ];
 
 pub fn validate_external_https_url(raw: &str) -> Result<String, CommandError> {
-    let trimmed = raw.trim();
-    if !trimmed.starts_with("https://") {
-        return Err(CommandError::new(
+    let invalid_url = || {
+        CommandError::new(
             "INVALID_EXTERNAL_URL",
             "Only allowlisted HTTPS reference URLs can be opened externally.",
-        ));
+        )
+    };
+    let parsed = Url::parse(raw.trim()).map_err(|_| invalid_url())?;
+    if parsed.scheme() != "https" || !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err(invalid_url());
     }
-    let after_scheme = &trimmed["https://".len()..];
-    let host_port = after_scheme.split(['/', '?', '#']).next().unwrap_or("");
-    let host = host_port.split(':').next().unwrap_or("").to_ascii_lowercase();
-
-    if !ALLOWED_HTTPS_HOSTS.iter().any(|allowed| *allowed == host) {
+    let host = parsed.host_str().ok_or_else(invalid_url)?;
+    if !ALLOWED_HTTPS_HOSTS.contains(&host) {
         return Err(CommandError::with_detail(
             "DISALLOWED_EXTERNAL_HOST",
             "External URL host is outside CrewSignal's documented source registry.",
-            host,
+            host.to_owned(),
         ));
     }
 
-    Ok(trimmed.to_string())
+    Ok(parsed.to_string())
 }
 
 #[cfg(target_os = "windows")]
@@ -79,7 +81,11 @@ mod tests {
     use super::validate_external_https_url;
 
     #[test]
-    fn allows_documented_nasa_cdc_nist_urls() {
+    fn allows_documented_publisher_urls() {
+        assert!(validate_external_https_url("https://www.nasa.gov/hrp/risks/").is_ok());
+        assert!(validate_external_https_url("https://www.nasa.gov/hrp/ongoing-hrp-research/").is_ok());
+        assert!(validate_external_https_url("https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp").is_ok());
+        assert!(validate_external_https_url("https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp").is_ok());
         assert!(validate_external_https_url("https://www.nasa.gov/hrp/hazards/").is_ok());
         assert!(validate_external_https_url(
             "https://wwwn.cdc.gov/nchs/data/nhanes/public/2021/labmethods/GLU-L-MET-508.pdf"
@@ -96,5 +102,8 @@ mod tests {
         assert!(validate_external_https_url("http://www.nasa.gov/").is_err());
         assert!(validate_external_https_url("file:///C:/Windows/System32/calc.exe").is_err());
         assert!(validate_external_https_url("https://evil.example.com/phish").is_err());
+        assert!(validate_external_https_url("https://www.asc-csa.gc.ca.example.com/").is_err());
+        assert!(validate_external_https_url("https://www.nasa.gov:443@example.com/").is_err());
+        assert!(validate_external_https_url("https://user@www.nasa.gov/").is_err());
     }
 }

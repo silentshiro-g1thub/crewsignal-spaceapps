@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
-import { EVIDENCE_REGISTRY, MEASUREMENT_EDUCATION_SECTIONS, type MetricDefinition } from '../shared/src';
+import { MEASUREMENT_RESEARCH, EVIDENCE_REGISTRY, MEASUREMENT_EDUCATION_SECTIONS, type MetricDefinition } from '../shared/src';
+import { ActionButton } from './AppPrimitives';
 import { useCrewSignal } from '../state/CrewSignalContext';
 import { useCrewTheme } from '../theme/ThemeProvider';
 
@@ -10,7 +11,7 @@ export function MeasurementEducation({ definition, collapsible = false }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   const { palette } = useCrewTheme();
-  const { io, announce } = useCrewSignal();
+  const { io, announce, openResearch } = useCrewSignal();
 
   return (
     <View style={{ gap: 8 }}>
@@ -40,6 +41,10 @@ export function MeasurementEducation({ definition, collapsible = false }: {
           </View>
         );
       })}
+      {(!collapsible || expanded) && (
+        <ActionButton label="View measurement research" variant="secondary"
+          onPress={() => openResearch(MEASUREMENT_RESEARCH[definition.id])} />
+      )}
     </View>
   );
 }

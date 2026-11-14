@@ -25,7 +25,7 @@ const MORE_ITEMS = [
   {
     to: '/demo/sources',
     title: 'Sources',
-    subtitle: 'Offline cached NASA, CDC, and NIST evidence summaries',
+    subtitle: 'Offline cached NASA, CSA, CDC, and NIST evidence summaries',
     icon: BookOpen,
   },
   {

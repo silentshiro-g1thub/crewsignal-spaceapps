@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { EVIDENCE_CHECKED_DATE, EVIDENCE_LIST } from '../shared/src';
+import { EVIDENCE_REGISTRY, EVIDENCE_LIST } from '../shared/src';
 import {
   ActionButton,
   CalmBanner,
@@ -14,8 +14,10 @@ import { useCrewTheme } from '../theme/ThemeProvider';
 
 export function SourcesScreen(): React.ReactElement {
   const { palette, fontSansMedium, fontSansRegular, fontMonoRegular } = useCrewTheme();
-  const { io, isOfflineSimulated, announce } = useCrewSignal();
+  const { io, isOfflineSimulated, announce, selectedResearch, researchReturnRoute, navigateTo } = useCrewSignal();
   const [linkStatus, setLinkStatus] = useState<string | null>(null);
+
+  const sourceList = selectedResearch ? [EVIDENCE_REGISTRY[selectedResearch.sourceId]!] : EVIDENCE_LIST;
 
   const handleOpenExternal = async (url: string, title: string) => {
     const res = await io.openExternalUrl(url);
@@ -39,8 +41,12 @@ export function SourcesScreen(): React.ReactElement {
     >
       <ScreenTitle
         title="Sources"
-        subtitle={`Cached offline evidence summaries · Last verified ${EVIDENCE_CHECKED_DATE}`}
+        subtitle="Cached offline evidence summaries"
       />
+
+      {selectedResearch && (
+        <ActionButton label="Back to previous screen" onPress={() => navigateTo(researchReturnRoute)} variant="secondary" />
+      )}
 
       {linkStatus ? (
         <CalmBanner
@@ -54,12 +60,12 @@ export function SourcesScreen(): React.ReactElement {
       {isOfflineSimulated ? (
         <CalmBanner
           title="Offline summary cache active"
-          message="Cached NASA, CDC, and NIST evidence summaries load completely offline. Opening original publisher links uses your device browser when connectivity is available."
+          message="Cached evidence summaries load completely offline. Opening original publisher links uses your device browser when connectivity is available."
           tone="neutral"
         />
       ) : null}
 
-      {EVIDENCE_LIST.map((ev) => {
+      {sourceList.map((ev) => {
         const hasKnownUpdate = ev.knownUpdateAvailableVersion !== null;
         const badgeLabel = hasKnownUpdate
           ? 'Known update'
@@ -71,7 +77,7 @@ export function SourcesScreen(): React.ReactElement {
           <PanelCard key={ev.sourceId} testID={`source-card-${ev.sourceId}`}>
             <View style={{ gap: 10 }}>
               <View style={styles.rowBetween}>
-                <EyebrowLabel>{ev.publisher}</EyebrowLabel>
+                <EyebrowLabel>{`${ev.publisher} · ${ev.summaryVersion}`}</EyebrowLabel>
                 <StatusBadge
                   label={badgeLabel}
                   tone={hasKnownUpdate ? 'review' : 'neutral'}
@@ -120,6 +126,7 @@ export function SourcesScreen(): React.ReactElement {
                 {`Checked: ${ev.checkedDate} · ${ev.url}`}
               </Text>
 
+              {selectedResearch && <Text style={{ color: palette.textBody }}>{selectedResearch.text}</Text>}
               <View style={styles.rowWrap}>
                 <ActionButton
                   testID={`open-source-${ev.sourceId}`}

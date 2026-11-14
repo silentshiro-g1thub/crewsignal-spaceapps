@@ -19,6 +19,7 @@ import {
   convertTemperature,
   formatSkipOutcomeMessage,
   formatUtcTimeHHMM,
+  getDueMetricSchedules,
   missionDayAndTimeToUtc,
   planInputUnitChange,
   resolveHelpContent,
@@ -26,6 +27,7 @@ import {
   type AppPreferences,
   type AppearancePreference,
   type BodySystemId,
+  type ResearchContext,
   type CheckInDraft,
   type CsvConflictChoice,
   type CsvPossibleDuplicateChoice,
@@ -182,11 +184,15 @@ export interface CrewSignalContextValue {
   store: CrewSignalSqliteStore;
   io: PlatformIoAdapter;
   nowUtc: () => string;
+  dueSchedules: ReturnType<typeof getDueMetricSchedules>;
   isKeyboardVisible: boolean;
   isOfflineSimulated: boolean;
   setOfflineSimulated: (offline: boolean) => void;
   activeRoute: CrewSignalRoute;
   previousRoute: CrewSignalRoute;
+  selectedResearch: ResearchContext | null;
+  openResearch: (context: ResearchContext) => void;
+  researchReturnRoute: CrewSignalRoute;
   navigateTo: (route: CrewSignalRoute) => void;
   goBackFromHelp: () => void;
   gettingStarted: boolean;
@@ -368,6 +374,8 @@ export function CrewSignalProvider({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
 
+  const [selectedResearch, setSelectedResearch] = useState<ResearchContext | null>(null);
+  const [researchReturnRoute, setResearchReturnRoute] = useState<CrewSignalRoute>('actions');
   const [activeRoute, setActiveRoute] = useState<CrewSignalRoute>('overview');
   const [previousRoute, setPreviousRoute] = useState<CrewSignalRoute>('overview');
   const [gettingStarted, setGettingStarted] = useState(false);
@@ -696,8 +704,28 @@ export function CrewSignalProvider({
     return new Date().toISOString();
   }, [activeProfile?.mode, activeProfile?.snapshotUtc, clockOverrideUtc]);
 
+  const [scheduleNowUtc, setScheduleNowUtc] = useState(() => new Date().toISOString());
+  const hasSchedules = Object.values(activeProfile?.schedules ?? {}).some((schedule) => schedule?.enabled);
+  const usesFixedClock = Boolean(clockOverrideUtc || (activeProfile?.mode === 'demo' && activeProfile.snapshotUtc));
+  useEffect(() => {
+    if (!hasSchedules || usesFixedClock) return;
+    const update = () => setScheduleNowUtc(new Date().toISOString());
+    update();
+    const timer = setInterval(update, 30_000);
+    return () => clearInterval(timer);
+  }, [activeProfile?.profileId, hasSchedules, usesFixedClock]);
+
+  const dueSchedules = activeProfile && snapshot
+    ? getDueMetricSchedules(
+        activeProfile.schedules,
+        snapshot.active.observations,
+        usesFixedClock ? nowUtc() : scheduleNowUtc,
+      )
+    : [];
+
   const navigateTo = useCallback(
     (route: CrewSignalRoute) => {
+      setSelectedResearch(null);
       if (route === 'help' && activeRoute !== 'help' && !gettingStarted) setPreviousRoute(activeRoute);
       setGettingStarted(false);
       setActiveRoute(route);
@@ -707,6 +735,12 @@ export function CrewSignalProvider({
     },
     [activeRoute, gettingStarted],
   );
+
+  function openResearch(context: ResearchContext) {
+    navigateTo('sources');
+    setResearchReturnRoute(activeRoute);
+    setSelectedResearch(context);
+  }
 
   const goBackFromHelp = useCallback(() => {
     setGettingStarted(false);
@@ -1835,10 +1869,14 @@ export function CrewSignalProvider({
     store,
     io,
     nowUtc,
+    dueSchedules,
     isKeyboardVisible,
     isOfflineSimulated,
     setOfflineSimulated: setIsOfflineSimulated,
     activeRoute,
+    selectedResearch,
+    openResearch,
+    researchReturnRoute,
     previousRoute,
     navigateTo,
     goBackFromHelp,

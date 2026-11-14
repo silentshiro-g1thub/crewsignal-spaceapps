@@ -12,9 +12,21 @@ CrewSignal is an independent manual-entry prototype using synthetic demonstratio
 
 ---
 
+## Challenge research trace
+
+| Indicator or coverage | In-app screen | Research source | Limitation |
+| --- | --- | --- | --- |
+| Sleep and mood | Explorer and measurement Help | [Ongoing HRP Research](https://www.nasa.gov/hrp/ongoing-hrp-research/) and [Five Hazards](https://www.nasa.gov/hrp/hazards/) | ARCHeR uses dedicated study tools. CrewSignal records self-reports. |
+| Heart rate and blood pressure | Explorer and measurement Help | [Risks of Human Spaceflight](https://www.nasa.gov/hrp/risks/) | Mission research gives context for recording method and rest. It cannot interpret a crew member's risk. |
+| Blood glucose and body temperature | Explorer and measurement Help | [Five Hazards](https://www.nasa.gov/hrp/hazards/) | A check-in captures a reading and its context. Nutritional status remains unassessed. |
+| Musculoskeletal and immune function | Explorer | [CSA space experiments](https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp) and [NASA HRP Risks](https://www.nasa.gov/hrp/risks/) | Both areas are unassessed by the six check-in indicators. |
+| Radiation | Explorer radiation research card | [CSA radiation monitoring](https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp) | Neutron exposure requires a dedicated instrument. Radiation exposure remains unassessed in CrewSignal. |
+
+The four new NASA and Canadian Space Agency entries were checked on 2026-11-14. CrewSignal uses original paraphrases and links for the CSA materials. [Canadian Space Agency terms](https://www.asc-csa.gc.ca/eng/terms.asp).
+
 ## Spaceflight, Clinical & Measurement Sources
 
-All cached summaries bundled in `shared/src/guidance.ts` and `shared/fixtures/evidence-and-help.json` were verified on **2026-11-13**. CrewSignal cites concise attributed summaries rather than republishing full external articles.
+Each summary in `shared/src/guidance.ts` and `shared/fixtures/evidence-and-help.json` carries its verification date. CrewSignal cites concise attributed summaries rather than republishing full external articles.
 
 1. **Five Hazards of Human Spaceflight**
    - Publisher: NASA Human Research Program (HRP)

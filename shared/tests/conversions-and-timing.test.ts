@@ -24,6 +24,7 @@ import {
   formatDurationHoursMinutes,
   formatObservationDisplay,
   formatReviewEquivalent,
+  getDueMetricSchedules,
   mgDlToMmolL,
   mmolLToMgDl,
   planInputUnitChange,
@@ -161,6 +162,23 @@ describe('Mission day timing, schedule freshness, sleep period, mood, and BP val
     expect(scheduleResult.status).toBe('past_interval');
     expect(scheduleResult.ageLabel).toBe('26h 18m');
     expect(scheduleResult.intervalLabel).toBe('24h');
+  });
+
+  it('lists only enabled due schedules, including first check-ins', () => {
+    const { schedules } = SIM_SCHEDULE_PROFILE;
+    const observations = SIM_SCHEDULE_OBSERVATIONS;
+    expect(getDueMetricSchedules(schedules, observations, SIM_01_SNAPSHOT_UTC))
+      .toMatchObject([{ metricId: 'blood_pressure', status: 'past_interval' }]);
+    expect(getDueMetricSchedules(schedules, [], SIM_01_SNAPSHOT_UTC))
+      .toMatchObject([{ metricId: 'blood_pressure', status: 'due_no_entries' }]);
+    expect(getDueMetricSchedules(
+      { ...schedules, blood_pressure: { ...schedules.blood_pressure!, enabled: false } },
+      observations, SIM_01_SNAPSHOT_UTC,
+    )).toEqual([]);
+    expect(getDueMetricSchedules(
+      { ...schedules, blood_pressure: { ...schedules.blood_pressure!, intervalHours: 48 } },
+      observations, SIM_01_SNAPSHOT_UTC,
+    )).toEqual([]);
   });
 
   it('validates sleep windows crossing midnight without replacing estimated duration, and distinguishes 0h0m vs blank', () => {

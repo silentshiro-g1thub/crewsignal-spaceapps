@@ -26,8 +26,8 @@ import {
 } from './conversions';
 import {
   buildInstantTiming,
-  evaluateMetricSchedule,
   buildPeriodTiming,
+  evaluateMetricSchedule,
   missionDayAndTimeToUtc,
   parseHHMM,
   validateSleepWindow,
@@ -784,9 +784,22 @@ export function createBlankDraft(params: {
   };
 }
 
-/**
- * Helper for computing latest committed observations by metric and distinct type coverage.
- */
+export function getDueMetricSchedules(
+  schedules: ProfileConfig['schedules'],
+  observations: readonly Observation[],
+  referenceNowUtc: string,
+) {
+  const latestByMetric = getLatestObservationsByMetric(observations);
+  return METRIC_ORDER.map((metricId) =>
+    evaluateMetricSchedule({
+      metricId,
+      latestObservation: latestByMetric[metricId] ?? null,
+      schedule: schedules[metricId] ?? null,
+      referenceNowUtc,
+    }),
+  ).filter(({ status }) => status === 'due_no_entries' || status === 'past_interval');
+}
+
 export function getLatestObservationsByMetric(
   observations: readonly Observation[],
 ): Record<MetricId, Observation | null> {
@@ -831,14 +844,7 @@ export function getDueCheckIns(
   observations: readonly Observation[],
   nowUtc: string,
 ) {
-  if (!profile) return [];
-  const latest = getLatestObservationsByMetric(observations);
-  return METRIC_ORDER.map((metricId) => evaluateMetricSchedule({
-    metricId,
-    latestObservation: latest[metricId],
-    schedule: profile.schedules[metricId] ?? null,
-    referenceNowUtc: nowUtc,
-  })).filter(({ status }) => status === 'due_no_entries' || status === 'past_interval');
+  return profile ? getDueMetricSchedules(profile.schedules, observations, nowUtc) : [];
 }
 
 export function getCheckInReminders(profile: ProfileConfig, observations: readonly Observation[]) {

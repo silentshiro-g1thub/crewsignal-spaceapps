@@ -640,6 +640,32 @@ Implementation checkout `8b67a8cc959c16aa261addcd53ba8e8232147875`. The audited 
 
 To close S05/G04 for this entry path, run the harnesses and repeat the normal check-in on each installed target. Flag `350` bpm, switch profiles, close the app and reopen offline. Confirm Review retains the flag in its original profile. Save and confirm one flagged row in History, JSON, CSV and the printable report. Use `350oops` as the malformed control. Verify a flagged sleep period is absent from fallback reference samples and personalized actions, then log an independent compatible reading and confirm comparison is available.
 
+## 11. Scheduled check-in prompts (issue #16)
+
+| Verification | Result |
+| --- | --- |
+| Shared harness | 10 tests passed in the timing and conversions suite. SIM-SCHEDULE shows blood pressure overdue, an enabled schedule with no entries shows a first check-in due, and disabled or fresh schedules are excluded. |
+| Windows UI harness | 6 tests passed in the draft handoff suite. SIM-SCHEDULE shows a navigation count of 1 and the Overview action opens the systolic and diastolic entry form. |
+| Android UI harness | Both focused cases passed. Phone and tablet layouts show a navigation count of 1 and the Overview action opens blood pressure entry using local SQLite fixture data. |
+| Android emulator | Pending installed-app verification. |
+| Installed devices | Pending on Android phone, Android tablet, and Windows. |
+
+Shared, desktop, and mobile type checks passed. The full shared suite had three unrelated failures involving CSV fixture line endings, a font license file byte count, and the expected guidance registry size.
+
+This change covers the in-app prompt milestone. Native notifications and their install permissions remain pending.
+
+## 12. NASA and CSA research context (issue #13)
+
+Tested the working tree based on `4bb2035940f3c2b4a16dc112abd91208cdec7758` with the research-context changes applied.
+
+| Verification | Result |
+| --- | --- |
+| `node shared/scripts/sync-to-targets.mjs --generate-artifacts`, `node shared/scripts/sync-to-targets.mjs --write all`, `node scripts/verify-clean-source.mjs`, `git diff --check` | Passed. All 43 shared files match on each target. |
+| Shared Vitest suite | 75 passed. The existing font manifest check failed because the Windows checkout uses CRLF for the Geist Mono license, whose manifest expects LF bytes. The focused guidance suite passed all 20 tests, including five exact agency URLs, source IDs, all six indicators, the SIM-01 sleep and BP comparison walkthrough, report defaults and report evidence scope. |
+| Desktop and mobile harnesses | Desktop Vitest passed 35 tests. The updated Explorer suite passed 9 tests, including cached card navigation and simulated browser failure. The full mobile Jest run passed 25 UI tests. The focused rerun with expanded browser-failure assertions passed and verified feedback and copying the exact CSA URL. |
+| Website | Type check passed. Vitest passed 12 tests and failed 3 in the check-in, restore and raise-reading workflows. |
+| Rust tests | Pending. Cargo was unavailable on this checkout. |
+| Installed Windows app, Android phone and Android tablet | Pending. Verify cached summaries in airplane mode from Explorer and measurement Help, the five deliberate browser opens, and browser failure feedback with URL copy on each target. |
 ## 9. Native tester downloads (upstream issue #15)
 
 Verification on November 14, 2026 used the working changes based on `4bb2035940f3c2b4a16dc112abd91208cdec7758`. The fork and upstream returned no published release assets through the public GitHub API.

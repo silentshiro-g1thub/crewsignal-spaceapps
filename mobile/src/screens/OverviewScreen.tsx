@@ -54,6 +54,7 @@ export function OverviewScreen(): React.ReactElement {
     insights,
     activeDraft,
     nowUtc,
+    dueSchedules,
     startOrResumeCheckIn,
     navigateTo,
     gettingStarted,
@@ -69,22 +70,6 @@ export function OverviewScreen(): React.ReactElement {
     [observations],
   );
   const coveredTypes = useMemo(() => countCoveredMetricTypes(observations), [observations]);
-
-  const schedules = useMemo(() => {
-    if (!activeProfile) return [];
-    return METRIC_ORDER.map((metricId) => ({
-      metricId,
-      result: evaluateMetricSchedule({
-        metricId,
-        latestObservation: latestByMetric[metricId] ?? null,
-        schedule: activeProfile.schedules[metricId] ?? null,
-        referenceNowUtc: currentUtc,
-      }),
-    }));
-  }, [activeProfile, currentUtc, latestByMetric]);
-  const dueSchedules = schedules.filter(({ result }) =>
-    result.status === 'due_no_entries' || result.status === 'past_interval',
-  );
 
   const sleepRef = useMemo(() => {
     if (!activeProfile) return null;
@@ -216,28 +201,26 @@ export function OverviewScreen(): React.ReactElement {
       />
 
       {dueSchedules.length > 0 && (
-        <View style={{ gap: 8 }}>
-          <EyebrowLabel>Due now</EyebrowLabel>
-          {dueSchedules.map((item) => {
-            const name = METRIC_DEFINITIONS[item.metricId].name;
-            const msg =
-              item.result.status === 'due_no_entries'
-                ? `First check-in due (every ${item.result.intervalLabel}).`
-                : `${name} was logged ${item.result.ageLabel} ago (past ${item.result.intervalLabel} interval).`;
-            return (
-              <CalmBanner
-                key={item.metricId}
-                testID={`schedule-due-${item.metricId}`}
-                title={`${name} due`}
-                message={msg}
-                tone="review"
-                actionLabel={`Log ${METRIC_DEFINITIONS[item.metricId].shortLabel}`}
-                onAction={() => startOrResumeCheckIn(item.metricId)}
-              />
-            );
-          })}
-        </View>
+        <PanelCard testID="overview-due-now">
+          <Text accessibilityRole="header" style={{ fontFamily: fontSansMedium, fontSize: 18, color: palette.textPrimary }}>
+            Due now
+          </Text>
+          {dueSchedules.map(({ metricId, status, intervalLabel, ageLabel }) => (
+            <CalmBanner
+              key={metricId}
+              testID={`schedule-due-${metricId}`}
+              title={METRIC_DEFINITIONS[metricId].name}
+              message={status === 'due_no_entries'
+                ? 'First check-in due.'
+                : `Last logged ${ageLabel} ago. The ${intervalLabel} interval has passed.`}
+              tone="review"
+              actionLabel={`Start ${METRIC_DEFINITIONS[metricId].name.toLowerCase()} check-in`}
+              onAction={() => startOrResumeCheckIn(metricId)}
+            />
+          ))}
+        </PanelCard>
       )}
+
       {activeProfile.mode === 'demo' && !gettingStarted && (
         <ActionButton label="Getting started" variant="secondary" onPress={openGettingStarted} />
       )}
@@ -377,7 +360,7 @@ export function OverviewScreen(): React.ReactElement {
       <View style={{ gap: 8 }}>
         <EyebrowLabel>Latest readings</EyebrowLabel>
         <View style={styles.readingsGrid}>
-          {schedules.map(({ metricId, result }) => {
+          {METRIC_ORDER.map((metricId) => {
             const def = METRIC_DEFINITIONS[metricId];
             const obs = latestByMetric[metricId] ?? null;
             const formatted = obs
@@ -397,7 +380,13 @@ export function OverviewScreen(): React.ReactElement {
               nowUtc: currentUtc,
             });
             const comparison = obs ? compareObservationToReference(obs, reference) : null;
-            const status = getReadingStatus(obs, comparison, result);
+            const schedule = evaluateMetricSchedule({
+              metricId,
+              latestObservation: obs,
+              schedule: activeProfile.schedules[metricId] ?? null,
+              referenceNowUtc: currentUtc,
+            });
+            const status = getReadingStatus(obs, comparison, schedule);
             const compText = comparison?.differenceText ?? comparison?.unavailableReason;
 
             return (

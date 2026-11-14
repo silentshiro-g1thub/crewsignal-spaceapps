@@ -244,8 +244,8 @@ describe("CrewSignal Desktop Canonical Vectors & UI Flows", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Load SIM-SCHEDULE fixture" }));
     fireEvent.click(screen.getAllByRole("button", { name: /^Overview$/ })[0]!);
     await screen.findByRole("heading", { name: "Due now" });
-    expect(screen.getByRole("button", { name: "Check-in, 1 due" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Log blood pressure" }));
+    expect(screen.getAllByRole("button", { name: "Check-in, 1 due" })).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Start blood pressure check-in" }));
     expect(await screen.findByLabelText("Systolic (mmHg)")).toBeInTheDocument();
   });
 

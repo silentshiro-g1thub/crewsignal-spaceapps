@@ -7,6 +7,10 @@ import {
   EVIDENCE_CHECKED_DATE,
   EVIDENCE_LIST,
   EVIDENCE_REGISTRY,
+  BODY_SYSTEM_RESEARCH,
+  MEASUREMENT_RESEARCH,
+  MISSION_RESEARCH_SOURCE_IDS,
+  RADIATION_RESEARCH,
   METRIC_ORDER,
   MF_01_FIXTURE,
   SIM_01_EPOCH_UTC,
@@ -417,10 +421,10 @@ describe('Controlled guidance, evidence registry, and Help registry', () => {
     expect(buildMetricInsight(metricId, { ...params, observation: { ...observation, quality: 'questionable' }, reference })).toBeNull();
   });
 
-  it('bundles the original and measurement-education sources with cached summaries', () => {
+  it('bundles the original, measurement-education, and mission research sources with cached summaries', () => {
     expect(EVIDENCE_LIST.filter((src) => src.checkedDate === EVIDENCE_CHECKED_DATE)).toHaveLength(8);
-    expect(EVIDENCE_LIST.filter((src) => src.checkedDate === '2026-11-14')).toHaveLength(9);
-    expect(EVIDENCE_LIST).toHaveLength(17);
+    expect(EVIDENCE_LIST.filter((src) => src.checkedDate === '2026-11-14')).toHaveLength(13);
+    expect(EVIDENCE_LIST).toHaveLength(21);
     for (const src of EVIDENCE_LIST) {
       expect(src.cachedAvailable).toBe(true);
       expect(src.summaryText.length).toBeGreaterThan(20);
@@ -429,6 +433,49 @@ describe('Controlled guidance, evidence registry, and Help registry', () => {
     expect(
       ACTION_CONTENT_REGISTRY['action-clinical-procedure-slot']?.enabled,
     ).toBe(false);
+  });
+
+  it('bundles the five mission research links and resolves every research card', () => {
+    const expected = {
+      'nasa-hrp-hazards': 'https://www.nasa.gov/hrp/hazards/',
+      'nasa-hrp-risks': 'https://www.nasa.gov/hrp/risks/',
+      'nasa-ongoing-hrp-research': 'https://www.nasa.gov/hrp/ongoing-hrp-research/',
+      'csa-radiation-monitoring': 'https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp',
+      'csa-iss-experiments': 'https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp',
+    };
+    expect(MISSION_RESEARCH_SOURCE_IDS).toEqual(Object.keys(expected));
+    for (const [id, url] of Object.entries(expected)) {
+      expect(EVIDENCE_REGISTRY[id]).toMatchObject({ sourceId: id, url, cachedAvailable: true, summaryVersion: 'Version 1' });
+    }
+    expect(EVIDENCE_REGISTRY['nasa-human-research-roadmap']?.url).toBe('https://humanresearchroadmap.nasa.gov/risks/');
+    for (const context of [...Object.values(BODY_SYSTEM_RESEARCH), ...Object.values(MEASUREMENT_RESEARCH), RADIATION_RESEARCH]) {
+      expect(EVIDENCE_REGISTRY[context.sourceId]?.cachedAvailable).toBe(true);
+      expect(context.text).toBeTruthy();
+    }
+    expect(Object.keys(MEASUREMENT_RESEARCH)).toHaveLength(6);
+  });
+
+  it('preserves synthetic sleep and BP comparisons and default report scope with research cards enabled', () => {
+    const bp = SIM_01_OBSERVATIONS.find((row) => row.metricId === 'blood_pressure')!;
+    const sleep = SIM_01_SLEEP_OBSERVATIONS[6]!;
+    const sleepReference = SIM_01_REFERENCES.find((row) => row.metricId === 'sleep')!;
+    expect(compareObservationToReference(sleep, sleepReference).comparisonAvailable).toBe(true);
+    expect(compareObservationToReference(bp, null).comparisonAvailable).toBe(false);
+
+    const report = buildReportBundle({
+      profile: SIM_01_PROFILE,
+      observations: SIM_01_OBSERVATIONS,
+      references: SIM_01_REFERENCES,
+      startDay: 1,
+      endDay: 42,
+      generatedAtUtc: SIM_01_SNAPSHOT_UTC,
+    });
+    expect(report.includedMetricIds).toEqual(['heart_rate', 'blood_pressure', 'body_temperature', 'sleep']);
+    expect(report.includeNotes).toBe(false);
+    expect(report.observations.map((row) => row.observationId)).toEqual(expect.arrayContaining([sleep.observationId, bp.observationId]));
+    expect(report.evidence.map((source) => source.sourceId)).not.toContain(RADIATION_RESEARCH.sourceId);
+    expect(report.evidence.map((source) => source.sourceId)).not.toContain(MEASUREMENT_RESEARCH.sleep.sourceId);
+    expect(report.evidence.map((source) => source.sourceId)).not.toContain(MEASUREMENT_RESEARCH.blood_pressure.sourceId);
   });
 
   it('pins sleep insights to input/reference/rule/source versions and limits review acknowledgement to that exact version', () => {

@@ -218,7 +218,10 @@ export function createRepository(db: CrewSignalDatabase = defaultDb) {
       events,
       references,
       insights,
-      sources,
+      sources: [
+        ...sources,
+        ...EVIDENCE_LIST.filter((entry) => !sources.some((cached) => cached.sourceId === entry.sourceId)),
+      ],
     };
   }
 

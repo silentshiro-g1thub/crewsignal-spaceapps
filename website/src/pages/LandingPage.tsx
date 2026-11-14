@@ -429,7 +429,7 @@ export function LandingPage() {
             <div className="cs-card cs-stack" style={{ gap: "10px" }}>
               <span className="cs-mono-stamp">Evidence</span>
               <h2 className="cs-section-title">
-                {EVIDENCE_LIST.length} cited NASA, CDC &amp; NIST sources
+                {EVIDENCE_LIST.length} cited sources
               </h2>
               <p style={BODY_TEXT}>
                 Short attributed summaries are bundled with the app, so unit
@@ -562,7 +562,7 @@ export function LandingPage() {
               </div>
             </dl>
             <p className="cs-helper">
-              Not endorsed by NASA, CDC or NIST. Research prototype, not a
+              Independent of NASA, CSA, CDC and NIST. Research prototype, not a
               medical device.
             </p>
           </div>

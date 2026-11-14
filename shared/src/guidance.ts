@@ -152,9 +152,8 @@ export const METRIC_ACTION_IDS = {
 } as const satisfies Record<MetricId, string>;
 
 /**
- * Canonical offline-cached evidence registry checked 2026-11-13.
- * Concise attributed summaries are bundled locally without full article scraping
- * or claims of NASA endorsement.
+ * Canonical offline evidence registry. Each record carries its verification date.
+ * The app bundles original attributed summaries and links to the publishers.
  */
 export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
   'nasa-sleep-risk': {
@@ -242,6 +241,78 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceReference> = {
     knownUpdateAvailableVersion: null,
     knownUpdateCheckedDate: null,
     relatedMetricIds: ['heart_rate', 'blood_pressure', 'sleep', 'mood'],
+    relatedActionIds: [],
+  },
+  'nasa-hrp-risks': {
+    sourceId: "nasa-hrp-risks",
+    title: "Risks of Human Spaceflight",
+    shortTitle: "NASA HRP risks",
+    publisher: "NASA Human Research Program",
+    url: "https://www.nasa.gov/hrp/risks/",
+    checkedDate: "2026-11-14",
+    sourceUpdatedDate: null,
+    summaryVersion: "Version 1",
+    summaryText: "NASA groups the risks it studies by the ways spaceflight can affect crew health and performance, including changes to the cardiovascular, immune and musculoskeletal systems.",
+    limitations: "The overview describes risks across missions. It cannot determine a crew member's risk from a check-in.",
+    cachedAvailable: true,
+    offlineAccessNote: "Available offline: summary",
+    knownUpdateAvailableVersion: null,
+    knownUpdateCheckedDate: null,
+    relatedMetricIds: [],
+    relatedActionIds: [],
+  },
+  'nasa-ongoing-hrp-research': {
+    sourceId: "nasa-ongoing-hrp-research",
+    title: "Ongoing HRP Research",
+    shortTitle: "NASA HRP research",
+    publisher: "NASA Human Research Program",
+    url: "https://www.nasa.gov/hrp/ongoing-hrp-research/",
+    checkedDate: "2026-11-14",
+    sourceUpdatedDate: null,
+    summaryVersion: "Version 1",
+    summaryText: "NASA lists studies that collect crew health and performance data. ARCHeR combines wearable activity and sleep data with crew feedback to study sleep in flight.",
+    limitations: "Study methods and equipment differ from self-reported sleep and mood check-ins.",
+    cachedAvailable: true,
+    offlineAccessNote: "Available offline: summary",
+    knownUpdateAvailableVersion: null,
+    knownUpdateCheckedDate: null,
+    relatedMetricIds: [],
+    relatedActionIds: [],
+  },
+  'csa-radiation-monitoring': {
+    sourceId: "csa-radiation-monitoring",
+    title: "Monitoring radiation for astronaut health",
+    shortTitle: "CSA radiation monitoring",
+    publisher: "Canadian Space Agency",
+    url: "https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp",
+    checkedDate: "2026-11-14",
+    sourceUpdatedDate: "2026-02-26",
+    summaryVersion: "Version 1",
+    summaryText: "The Canadian Active Neutron Spectrometer (CANS) is a dedicated instrument designed to measure neutron radiation exposure in space.",
+    limitations: "The instrument measures the neutron component of radiation. CrewSignal has no radiation measurement or exposure estimate.",
+    cachedAvailable: true,
+    offlineAccessNote: "Available offline: summary",
+    knownUpdateAvailableVersion: null,
+    knownUpdateCheckedDate: null,
+    relatedMetricIds: [],
+    relatedActionIds: [],
+  },
+  'csa-iss-experiments': {
+    sourceId: "csa-iss-experiments",
+    title: "Why do we conduct science experiments in space?",
+    shortTitle: "CSA space experiments",
+    publisher: "Canadian Space Agency",
+    url: "https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp",
+    checkedDate: "2026-11-14",
+    sourceUpdatedDate: null,
+    summaryVersion: "Version 1",
+    summaryText: "Researchers use the International Space Station to study health changes in weightlessness and prepare for longer missions, with some findings also informing research on Earth.",
+    limitations: "The explainer describes research goals. It provides no interpretation thresholds for individual check-ins.",
+    cachedAvailable: true,
+    offlineAccessNote: "Available offline: summary",
+    knownUpdateAvailableVersion: null,
+    knownUpdateCheckedDate: null,
+    relatedMetricIds: [],
     relatedActionIds: [],
   },
   'nasa-human-research-roadmap': {

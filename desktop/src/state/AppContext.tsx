@@ -12,6 +12,7 @@ import {
   computeMissionDay,
   createBlankDraft,
   formatUtcTimeHHMM,
+  getDueMetricSchedules,
   resolveActiveReference,
   selectFallbackReferenceToLock,
   SIM_01_PROFILE_ID,
@@ -20,6 +21,7 @@ import {
   type AppPreferences,
   type ReadingReportScope,
   type BodySystemId,
+  type ResearchContext,
   type CheckInDraft,
   type GettingStartedDestination,
   type MetricId,
@@ -99,6 +101,9 @@ interface AppContextValue {
   diagnosticHooks: DiagnosticHooks;
 
   route: AppRoute;
+  selectedResearch: ResearchContext | null;
+  openResearch: (context: ResearchContext) => void;
+  researchReturnRoute: AppRoute;
   navigate: (nextRoute: AppRoute, reportScope?: ReadingReportScope) => void;
   helpReturnRoute: AppRoute;
   gettingStarted: boolean;
@@ -141,6 +146,7 @@ interface AppContextValue {
   closeModal: () => void;
 
   currentReferenceNowUtc: string;
+  dueSchedules: ReturnType<typeof getDueMetricSchedules>;
   activeReferencesByMetric: Record<MetricId, PersonalReference | null>;
 
   /**
@@ -186,6 +192,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
 
   const [systemTheme, setSystemTheme] = useState<"dark" | "light">(resolveSystemTheme);
+  const [selectedResearch, setSelectedResearch] = useState<ResearchContext | null>(null);
+  const [researchReturnRoute, setResearchReturnRoute] = useState<AppRoute>("actions");
   const [route, setRoute] = useState<AppRoute>("overview");
   const [helpReturnRoute, setHelpReturnRoute] = useState<AppRoute>("overview");
   const [gettingStarted, setGettingStarted] = useState(false);
@@ -482,6 +490,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return wallClockUtc.replace(/\.\d{3}Z$/, "Z");
   }, [activeProfile, wallClockUtc]);
 
+  const [scheduleNowUtc, setScheduleNowUtc] = useState(() => new Date().toISOString());
+  const hasSchedules = Object.values(activeProfile?.schedules ?? {}).some((schedule) => schedule?.enabled);
+  useEffect(() => {
+    if (!hasSchedules || activeProfile?.mode === "demo") return;
+    const update = () => setScheduleNowUtc(new Date().toISOString());
+    update();
+    const timer = window.setInterval(update, 30_000);
+    return () => window.clearInterval(timer);
+  }, [activeProfile?.profileId, activeProfile?.mode, hasSchedules]);
+
+  const dueSchedules = activeProfile && snapshot
+    ? getDueMetricSchedules(
+        activeProfile.schedules,
+        snapshot.profileData.observations,
+        activeProfile.mode === "demo" ? currentReferenceNowUtc : scheduleNowUtc,
+      )
+    : [];
+
   const activeReferencesByMetric = useMemo<Record<MetricId, PersonalReference | null>>(() => {
     const empty: Record<MetricId, PersonalReference | null> = {
       heart_rate: null,
@@ -550,12 +576,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const navigate = useCallback((nextRoute: AppRoute, reportScope?: ReadingReportScope) => {
+    setSelectedResearch(null);
     if (nextRoute === "help" && route !== "help" && !gettingStarted) setHelpReturnRoute(route);
     setGettingStarted(false);
     setReadingReportScope(nextRoute === "reports" ? reportScope : undefined);
     setSelectedActionId(null);
     showRoute(nextRoute);
   }, [gettingStarted, route, showRoute]);
+
+  function openResearch(context: ResearchContext) {
+    navigate("sources");
+    setResearchReturnRoute(route);
+    setSelectedResearch(context);
+  }
 
   function openAction(actionId: string) {
     navigate("actions");
@@ -844,6 +877,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     diagnosticHooks,
     route,
     navigate,
+    selectedResearch,
+    openResearch,
+    researchReturnRoute,
     helpReturnRoute,
     gettingStarted,
     openGettingStarted,
@@ -880,6 +916,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     openModal,
     closeModal,
     currentReferenceNowUtc,
+    dueSchedules,
     activeReferencesByMetric,
     refreshSnapshot,
     setAppearance,

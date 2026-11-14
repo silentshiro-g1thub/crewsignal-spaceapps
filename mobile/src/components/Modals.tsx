@@ -130,11 +130,13 @@ export function MeasurementHelpModal({
   metricId,
   onClose,
   onOpenSources,
+  onOpenResearch,
 }: {
   visible: boolean;
   metricId: MetricId;
   onClose: () => void;
   onOpenSources: () => void;
+  onOpenResearch: () => void;
 }): React.ReactElement | null {
   const { palette, fontSansRegular, fontSansMedium, fontMonoRegular } = useCrewTheme();
   if (!visible) return null;
@@ -226,6 +228,15 @@ export function MeasurementHelpModal({
       </PanelCard>
 
       <View style={{ gap: 10 }}>
+        <ActionButton
+          label="View measurement research"
+          onPress={() => {
+            onClose();
+            onOpenResearch();
+          }}
+          variant="secondary"
+          fullWidth
+        />
         <ActionButton
           label="Open offline Sources summary"
           onPress={() => {

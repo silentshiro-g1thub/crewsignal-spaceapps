@@ -65,6 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     snapshot,
     activeDraft,
     currentReferenceNowUtc,
+    dueSchedules,
     toast,
     dismissToast,
     liveAnnouncement,
@@ -76,6 +77,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const dueCount = getDueCheckIns(activeProfile, snapshot?.profileData.observations ?? [], currentReferenceNowUtc).length;
   const [moreOpen, setMoreOpen] = useState(false);
 
+  const checkInCount = dueSchedules.length;
+  const checkInLabel = checkInCount ? `Check-in, ${checkInCount} due` : "Check-in";
   const missionDay = activeProfile
     ? Math.max(1, computeMissionDay(currentReferenceNowUtc, activeProfile.missionEpochUtc))
     : 1;
@@ -304,6 +307,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             key={itemRoute}
             type="button"
             className="mobile-nav-btn"
+            aria-label={itemRoute === "check_in" ? checkInLabel : compactLabel}
             aria-current={route === itemRoute ? "page" : undefined}
             onClick={() => {
               setMoreOpen(false);

@@ -145,6 +145,18 @@ describe("PR #1 review 215c55b: draft handoff for SIM-SCHEDULE and profile repla
     window.__CREWSIGNAL_MOCK_FILES__ = undefined;
   });
 
+  it("opens the due blood pressure check-in from Overview", async () => {
+    render(<App />);
+    await screen.findByText(/11 observations across 5 of 6 types/i);
+    await loadFixture();
+    nav(/^Overview$/i);
+
+    expect(await screen.findByRole("heading", { name: "Due now" })).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Check-in, 1 due" }).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Start blood pressure check-in" }));
+    expect(await screen.findByLabelText(/Systolic/i)).toBeTruthy();
+  });
+
   it("SIM-SCHEDULE: a stored Record draft is saved with Personal and resumes there", async () => {
     render(<App />);
     await screen.findByText(/11 observations across 5 of 6 types/i);

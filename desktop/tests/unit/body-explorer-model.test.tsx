@@ -10,7 +10,7 @@ import {
 import { BodyExplorerVisual } from "../../src/components/BodyExplorerVisual";
 import type { BodyModelSceneLoader } from "../../src/components/bodyModel/BodyModelView";
 import type { BodyModelSceneOptions } from "../../src/components/bodyModel/bodyModelScene";
-import { browserMockBackend, buildDemoSeedInput } from "../../src/bridge/desktopBridge";
+import { browserMockBackend, buildDemoSeedInput, desktopBridge } from "../../src/bridge/desktopBridge";
 import { App } from "../../src/App";
 
 interface FakeScene {
@@ -211,6 +211,26 @@ describe("Health Explorer 3D model", () => {
 describe("Health Explorer route without WebGL (jsdom)", () => {
   beforeEach(() => {
     browserMockBackend.resetDemo(buildDemoSeedInput(false));
+  });
+
+  it("opens a cached research card and offers URL copy after browser failure", async () => {
+    const openExternal = vi.spyOn(desktopBridge, "openExternalUrl").mockRejectedValue(new Error("No browser handler"));
+    try {
+      render(<App />);
+      fireEvent.click((await screen.findAllByRole("button", { name: /^Health Explorer$/i }))[0]!);
+      fireEvent.click(await screen.findByRole("tab", { name: "Mission context" }));
+      fireEvent.click(screen.getByRole("button", { name: "CSA radiation monitoring" }));
+      await screen.findByRole("heading", { name: "Monitoring radiation for astronaut health" });
+      expect(screen.getByText(/Canadian Space Agency · Version 1/)).toBeInTheDocument();
+      expect(screen.getByText(/CrewSignal check-ins leave radiation exposure unassessed/)).toBeInTheDocument();
+      expect(openExternal).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "Open source URL" }));
+      expect(openExternal).toHaveBeenCalledWith("https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp");
+      await screen.findByText(/You can copy the source URL/);
+      expect(screen.getByRole("button", { name: "Copy source URL" })).toBeInTheDocument();
+    } finally {
+      openExternal.mockRestore();
+    }
   });
 
   it("keeps the existing list, SVG diagram and detail panel in agreement", async () => {
