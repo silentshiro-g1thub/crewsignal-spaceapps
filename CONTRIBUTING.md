@@ -1,6 +1,6 @@
 # Contributing to CrewSignal
 
-Release verification targets Android phones, Android tablets and Windows. The website remains a shared-code consumer until the cutover in issue #8. Use synthetic profiles and fixtures for development and evidence.
+Release verification targets Android phones, Android tablets and Windows. The separate website vendors a reviewed shared snapshot through scripts/export-site-shared.mjs. Use synthetic profiles and fixtures for development and evidence.
 
 ## Issues
 

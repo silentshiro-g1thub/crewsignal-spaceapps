@@ -426,6 +426,7 @@ describe('Controlled guidance, evidence registry, and Help registry', () => {
     expect(EVIDENCE_LIST.filter((src) => src.checkedDate === '2026-11-14')).toHaveLength(13);
     expect(EVIDENCE_LIST).toHaveLength(21);
     for (const src of EVIDENCE_LIST) {
+      expect([EVIDENCE_CHECKED_DATE, '2026-11-14']).toContain(src.checkedDate);
       expect(src.cachedAvailable).toBe(true);
       expect(src.summaryText.length).toBeGreaterThan(20);
       expect(src.limitations.length).toBeGreaterThan(15);

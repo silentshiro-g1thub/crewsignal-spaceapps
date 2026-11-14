@@ -4,7 +4,7 @@ import path from 'node:path';
 import { checkTargetParity } from '../shared/scripts/sync-to-targets.mjs';
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, '..');
-const TARGETS = ['website', 'desktop', 'mobile'];
+const TARGETS = ['desktop', 'mobile'];
 
 const REQUIRED_ROOT_FILES = [
   '.gitignore',

@@ -8,7 +8,7 @@ const SHARED_ROOT = path.resolve(import.meta.dirname, '..');
 const SOURCE_ROOT = path.resolve(SHARED_ROOT, '..');
 
 const SYNC_DIRECTORIES = ['src', 'tokens', 'fixtures', path.join('assets', 'fonts')];
-const VALID_TARGETS = ['website', 'desktop', 'mobile'];
+const VALID_TARGETS = ['desktop', 'mobile'];
 
 function sha256File(filePath) {
   const buf = fs.readFileSync(filePath);
@@ -217,6 +217,10 @@ async function main() {
   }
 
   const requestedTargets = args.filter((a) => !a.startsWith('--'));
+  const invalidTargets = requestedTargets.filter((t) => t !== 'all' && !VALID_TARGETS.includes(t));
+  if (invalidTargets.length) {
+    throw new Error(`Unknown native target: ${invalidTargets.join(', ')}. Use --target-dir for external snapshots.`);
+  }
   const targets =
     requestedTargets.length === 0 || requestedTargets.includes('all')
       ? VALID_TARGETS
@@ -226,8 +230,8 @@ async function main() {
     console.log(
       'Usage:\n' +
         '  node scripts/sync-to-targets.mjs --generate-artifacts\n' +
-        '  node scripts/sync-to-targets.mjs --write [website|desktop|mobile|all]\n' +
-        '  node scripts/sync-to-targets.mjs --check [website|desktop|mobile|all]\n' +
+        '  node scripts/sync-to-targets.mjs --write [desktop|mobile|all]\n' +
+        '  node scripts/sync-to-targets.mjs --check [desktop|mobile|all]\n' +
         '  node scripts/sync-to-targets.mjs --write|--check --target-dir <path>',
     );
     return;

@@ -91,20 +91,3 @@ jobs:
       - name: Run Rust tests
         working-directory: desktop/src-tauri
         run: cargo "+$env:RUST_VERSION" test --locked
-
-  website:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: website
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: website/package-lock.json
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test -- --pool=threads
-      - run: npm run build
